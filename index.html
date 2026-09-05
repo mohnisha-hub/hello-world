@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="aurora">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hello World — Aesthetic Experience</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+</head>
+<body>
+  <!-- Ambient Canvas Background -->
+  <canvas id="ambient-canvas"></canvas>
+  <div class="blob-glow blob-1"></div>
+  <div class="blob-glow blob-2"></div>
+  <div class="blob-glow blob-3"></div>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+    
+    <!-- Navigation Bar -->
+    <header class="navbar glass-panel">
+      <div class="nav-brand">
+        <div class="brand-icon">✨</div>
+        <div class="brand-text">
+          <span class="brand-title">AESTHETIC</span>
+          <span class="brand-sub">HELLO WORLD</span>
+        </div>
+      </div>
+
+      <!-- Live Server Status Badge -->
+      <div class="server-badge" id="server-badge" title="Live connection to backend server">
+        <span class="status-dot pulse"></span>
+        <span class="status-text" id="status-text">Connecting...</span>
+        <span class="status-ping" id="status-ping">-- ms</span>
+      </div>
+
+      <!-- Controls: Themes & Audio -->
+      <div class="nav-actions">
+        <!-- Sound Effect Toggle -->
+        <button class="icon-btn" id="audio-toggle" title="Toggle Sound Feedback" aria-label="Toggle sound">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <span class="btn-tooltip">Sound: ON</span>
+        </button>
+
+        <!-- Theme Switcher Dropdown -->
+        <div class="theme-selector-wrap">
+          <button class="theme-selector-btn" id="theme-btn">
+            <span class="theme-dot" id="active-theme-dot"></span>
+            <span id="active-theme-name">Aurora</span>
+            <svg class="chevron" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="theme-dropdown glass-panel" id="theme-menu">
+            <button class="theme-opt active" data-theme="aurora"><span class="opt-dot aurora"></span> Aurora Cyan</button>
+            <button class="theme-opt" data-theme="cyberpunk"><span class="opt-dot cyberpunk"></span> Cyber Neon</button>
+            <button class="theme-opt" data-theme="sunset"><span class="opt-dot sunset"></span> Sunset Rose</button>
+            <button class="theme-opt" data-theme="emerald"><span class="opt-dot emerald"></span> Emerald Dream</button>
+            <button class="theme-opt" data-theme="midnight"><span class="opt-dot midnight"></span> Deep Space</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="pill-badge">
+          <span class="sparkle">✦</span>
+          <span>LIVE MIC SPEECH-TO-STICK-FIGURE SHOWCASE</span>
+          <span class="sparkle">✦</span>
+        </div>
+
+        <h1 class="hero-title">
+          <span class="gradient-text glow-text">Speak & Watch.</span>
+        </h1>
+
+        <!-- Typewriter Subtitle -->
+        <div class="typewriter-container">
+          <span class="typewriter-prefix">Voice Translation: </span>
+          <span class="typewriter-text" id="typewriter"></span>
+          <span class="cursor">|</span>
+        </div>
+      </section>
+
+      <!-- STICK FIGURE LIVE AUDIO CINEMA / STAGE -->
+      <section class="stick-figure-section glass-panel" id="stage-panel">
+        <div class="stage-top-bar">
+          <div class="stage-badge">
+            <span class="live-indicator" id="mic-indicator"></span>
+            <span id="mic-status-label">Mic Standby</span>
+          </div>
+
+          <!-- Audio Waveform Visualizer Canvas in Nav Header -->
+          <canvas id="mic-waveform-canvas" width="160" height="32"></canvas>
+
+          <div class="stage-controls">
+            <!-- Mic Trigger Button -->
+            <button class="btn-mic glass-btn" id="toggle-mic-btn">
+              <span class="mic-icon" id="mic-icon-svg">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+              </span>
+              <span id="mic-btn-text">Start Live Mic</span>
+            </button>
+
+            <!-- Test Voice Simulation Dropdown / Button -->
+            <button class="glass-btn btn-demo-speech" id="demo-speech-btn" title="Simulate speech if mic is unavailable">
+              <span>⚡ Demo Voice</span>
+            </button>
+
+            <!-- Language selector for speech recognition -->
+            <select id="speech-lang-select" class="lang-select-dropdown" title="Select Speech Recognition Language">
+              <option value="en-US">🇺🇸 English (US)</option>
+              <option value="en-GB">🇬🇧 English (UK)</option>
+              <option value="es-ES">🇪🇸 Spanish</option>
+              <option value="fr-FR">🇫🇷 French</option>
+              <option value="de-DE">🇩🇪 German</option>
+              <option value="ja-JP">🇯🇵 Japanese</option>
+              <option value="hi-IN">🇮🇳 Hindi</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- The Interactive Canvas Stage for Stick Figures -->
+        <div class="stick-stage-viewport">
+          <canvas id="stick-stage-canvas"></canvas>
+          
+          <!-- Floating Dialogue Speech Bubbles (DOM overlay for ultra crisp rendering & animations) -->
+          <div class="dialogue-overlay" id="dialogue-overlay">
+            <div class="stick-bubble left-bubble" id="bubble-left">
+              <div class="bubble-speaker-tag">
+                <span class="speaker-avatar">🕶️</span>
+                <span class="speaker-name">NEO</span>
+                <span class="speaking-pulse"></span>
+              </div>
+              <div class="bubble-text" id="bubble-text-left">Say something into your microphone... I'm listening!</div>
+              <div class="bubble-arrow left-arrow"></div>
+            </div>
+
+            <div class="stick-bubble right-bubble" id="bubble-right">
+              <div class="bubble-speaker-tag">
+                <span class="speaker-avatar">🤖</span>
+                <span class="speaker-name">PIXEL</span>
+                <span class="speaking-pulse"></span>
+              </div>
+              <div class="bubble-text" id="bubble-text-right">Speak loud and clear! Try saying "dance", "fire", "cool", or "party"!</div>
+              <div class="bubble-arrow right-arrow"></div>
+            </div>
+          </div>
+
+          <!-- Dynamic Audio Energy Meter Ring Overlay -->
+          <div class="stage-energy-hud">
+            <span class="hud-label">VOICE ENERGY</span>
+            <div class="hud-meter-bar"><div class="hud-meter-fill" id="voice-energy-fill"></div></div>
+          </div>
+        </div>
+
+        <!-- Quick Voice Triggers & Easter Egg Pills -->
+        <div class="voice-triggers-bar">
+          <span class="triggers-title">🔥 Magic Voice Commands:</span>
+          <div class="triggers-list">
+            <button class="trigger-chip" data-phrase="Hello world, we are alive!">"Hello World"</button>
+            <button class="trigger-chip" data-phrase="Drop the beat and dance!">"Dance" 🕺</button>
+            <button class="trigger-chip" data-phrase="This is so cool as fuck!">"Cool" 🕶️</button>
+            <button class="trigger-chip" data-phrase="Set the whole stage on fire!">"Fire" 🔥</button>
+            <button class="trigger-chip" data-phrase="Welcome to the matrix system.">"Matrix" 💻</button>
+            <button class="trigger-chip" data-phrase="Party time everyone celebrate!">"Party" 🎉</button>
+          </div>
+        </div>
+
+        <!-- Live Transcription Transcript Bar -->
+        <div class="live-transcript-box">
+          <div class="transcript-header">
+            <span class="transcript-title">LIVE MIC TRANSCRIPT:</span>
+            <span class="transcript-status" id="interim-status">Listening for speech...</span>
+          </div>
+          <div class="transcript-stream" id="transcript-stream">
+            <span class="stream-final" id="stream-final"></span>
+            <span class="stream-interim" id="stream-interim">...</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3D Interactive Card -->
+      <div class="card-3d-wrapper">
+        <div class="card-3d glass-panel" id="hero-card">
+          <div class="card-glare"></div>
+          <div class="card-inner">
+            <div class="card-header-bar">
+              <div class="window-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <div class="card-chip">universe.init()</div>
+              <div class="card-time" id="card-time">00:00:00 UTC</div>
+            </div>
+
+            <div class="card-body">
+              <div class="card-quote">
+                <span class="quote-mark">“</span>
+                <p id="dynamic-greeting-quote">Every journey into the infinite expanse of code begins with a single, humble greeting to the cosmos.</p>
+              </div>
+
+              <div class="interactive-tagline">
+                <div class="code-snippet-box">
+                  <span class="code-line"><span class="kw">const</span> <span class="var">greeting</span> = <span class="str">"Hello, Universe!"</span>;</span>
+                  <span class="code-line"><span class="fn">console</span>.<span class="method">log</span>(<span class="var">greeting</span>);</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-footer-bar">
+              <div class="card-stat">
+                <span class="stat-label">Origin</span>
+                <span class="stat-value">Bell Labs, 1972</span>
+              </div>
+              <div class="card-actions">
+                <button class="btn-like glass-btn" id="like-btn">
+                  <span class="heart-icon">💖</span>
+                  <span id="like-count">42</span>
+                </button>
+                <button class="btn-primary" id="sparkle-btn">
+                  <span>Spark Magic</span>
+                  <span class="btn-icon">🪄</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Playground Grid -->
+      <section class="grid-section">
+        
+        <!-- Code Vault Panel -->
+        <div class="panel glass-panel code-vault-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <div class="panel-icon">💻</div>
+              <div>
+                <h3>Multi-Language Vault</h3>
+                <p>Hello World in popular programming dialects</p>
+              </div>
+            </div>
+            <button class="copy-btn glass-btn" id="copy-code-btn">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span id="copy-text">Copy</span>
+            </button>
+          </div>
+
+          <!-- Language Tabs -->
+          <div class="lang-tabs" id="lang-tabs">
+            <button class="lang-tab active" data-lang="python">Python</button>
+            <button class="lang-tab" data-lang="javascript">JavaScript</button>
+            <button class="lang-tab" data-lang="rust">Rust</button>
+            <button class="lang-tab" data-lang="go">Go</button>
+            <button class="lang-tab" data-lang="cpp">C++</button>
+            <button class="lang-tab" data-lang="swift">Swift</button>
+            <button class="lang-tab" data-lang="ruby">Ruby</button>
+          </div>
+
+          <!-- Code Display Box -->
+          <div class="code-viewport">
+            <pre><code id="code-content" class="language-code">print("Hello, World!")</code></pre>
+          </div>
+        </div>
+
+        <!-- Send a Greeting & Community Feed Panel -->
+        <div class="panel glass-panel greetings-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <div class="panel-icon">🌍</div>
+              <div>
+                <h3>Say Hello to the World</h3>
+                <p>Broadcast your message via the live Python API</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submission Form -->
+          <form class="greeting-form" id="greeting-form">
+            <div class="form-row">
+              <input type="text" id="author-input" placeholder="Your name or handle..." maxlength="30" required autocomplete="off">
+              <select id="avatar-select" class="avatar-dropdown">
+                <option value="✨">✨ Sparkle</option>
+                <option value="🚀">🚀 Rocket</option>
+                <option value="🌟">🌟 Star</option>
+                <option value="👾">👾 Gamer</option>
+                <option value="☕">☕ Coffee</option>
+                <option value="🪐">🪐 Cosmos</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <input type="text" id="message-input" placeholder="Say hello to everyone..." maxlength="120" required autocomplete="off">
+              <button type="submit" class="btn-send">
+                <span>Send</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+            </div>
+          </form>
+
+          <!-- Greetings Feed -->
+          <div class="greetings-feed" id="greetings-feed">
+            <div class="feed-loader">Loading greetings from server...</div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Live Server Metrics Bar -->
+      <section class="metrics-grid">
+        <div class="metric-card glass-panel">
+          <div class="metric-icon">⚡</div>
+          <div class="metric-info">
+            <span class="metric-val" id="metric-uptime">--</span>
+            <span class="metric-lbl">Server Uptime</span>
+          </div>
+        </div>
+        <div class="metric-card glass-panel">
+          <div class="metric-icon">👁️</div>
+          <div class="metric-info">
+            <span class="metric-val" id="metric-visits">0</span>
+            <span class="metric-lbl">Total Visits</span>
+          </div>
+        </div>
+        <div class="metric-card glass-panel">
+          <div class="metric-icon">💌</div>
+          <div class="metric-info">
+            <span class="metric-val" id="metric-messages">0</span>
+            <span class="metric-lbl">Greetings Shared</span>
+          </div>
+        </div>
+        <div class="metric-card glass-panel">
+          <div class="metric-icon">💖</div>
+          <div class="metric-info">
+            <span class="metric-val" id="metric-likes">42</span>
+            <span class="metric-lbl">Total Hearts</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Aesthetic Footer -->
+    <footer class="footer">
+      <p>Crafted with modern HTML5, CSS3, Vanilla JS & Python Standard Library • Ready to deploy anywhere</p>
+      <div class="footer-links">
+        <span class="footer-pill">Status: Operational 🚀</span>
+        <span class="footer-pill" id="footer-clock">00:00:00</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Confetti Canvas Container -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- JavaScript Application -->
+  <script src="app.js"></script>
+</body>
+</html>
