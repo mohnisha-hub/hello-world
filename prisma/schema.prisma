@@ -1,0 +1,155 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "rhel-openssl-1.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  passwordHash  String
+  email         String?
+  workNumber    String?
+  bio           String?
+  location      String?
+  photoUrl      String?
+  profileStatus String   @default("draft")
+  feedSort      String   @default("publishedAtDesc")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  collections     Collection[]
+  perfumes        Perfume[]
+  pins            Pin[]
+  wishlist        WishlistItem[]
+  sentBids        Bid[]          @relation("Bidder")
+  receivedBids    Bid[]          @relation("Seller")
+  sentMessages    Message[]
+  ratingsGiven    Rating[]       @relation("Rater")
+  ratingsReceived Rating[]       @relation("SellerRated")
+}
+
+model Collection {
+  id          String    @id @default(cuid())
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  photoUrl    String?
+  status      String    @default("draft")
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  perfumes    Perfume[]
+
+  @@index([ownerId, status])
+}
+
+model Perfume {
+  id               String      @id @default(cuid())
+  ownerId          String
+  owner            User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  collectionId     String?
+  collection       Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  name             String
+  saleType         String      @default("buy")
+  priceCents       Int
+  minBidCents      Int?
+  imageUrl         String?
+  kind             String?
+  fill             String?
+  ml               Float?
+  shippingIncluded Boolean?
+  description      String?
+  topNotes         String?
+  middleNotes      String?
+  baseNotes        String?
+  catalogRating    Float?
+  links            String      @default("[]")
+  status           String      @default("draft")
+  publishedAt      DateTime?
+  soldAt           DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  bids             Bid[]
+  ratings          Rating[]
+
+  @@index([ownerId, status])
+  @@index([collectionId])
+}
+
+model Pin {
+  id         String @id @default(cuid())
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType String
+  targetId   String
+  position   Int
+
+  @@unique([userId, targetType, targetId])
+}
+
+model WishlistItem {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, targetType, targetId])
+}
+
+model Bid {
+  id           String        @id @default(cuid())
+  perfumeId    String
+  perfume      Perfume       @relation(fields: [perfumeId], references: [id], onDelete: Cascade)
+  bidderId     String
+  bidder       User          @relation("Bidder", fields: [bidderId], references: [id])
+  sellerId     String
+  seller       User          @relation("Seller", fields: [sellerId], references: [id])
+  amountCents  Int
+  kind         String        @default("bid")
+  status       String        @default("open")
+  createdAt    DateTime      @default(now())
+  conversation Conversation?
+
+  @@index([bidderId, status])
+  @@index([sellerId, status])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  bidId     String    @unique
+  bid       Bid       @relation(fields: [bidId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  body           String
+  createdAt      DateTime     @default(now())
+}
+
+model Rating {
+  id            String   @id @default(cuid())
+  perfumeId     String
+  perfume       Perfume  @relation(fields: [perfumeId], references: [id])
+  raterId       String
+  rater         User     @relation("Rater", fields: [raterId], references: [id])
+  sellerId      String
+  seller        User     @relation("SellerRated", fields: [sellerId], references: [id])
+  purchaseScore Int
+  deliveryScore Int
+  createdAt     DateTime @default(now())
+
+  @@unique([perfumeId, raterId])
+}

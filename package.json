@@ -1,0 +1,44 @@
+{
+  "name": "hello-world",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "sh scripts/vercel-build.sh",
+    "start": "next start",
+    "lint": "eslint",
+    "seed": "node prisma/seed.mjs",
+    "postinstall": "sh scripts/prisma-generate.sh",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "@types/bcryptjs": "^2.4.6",
+    "@vercel/blob": "^2.0.0",
+    "bcryptjs": "^3.0.3",
+    "next": "^15.5.9",
+    "next-auth": "^5.0.0-beta.29",
+    "prisma": "^6.16.2",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.55.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.2",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}

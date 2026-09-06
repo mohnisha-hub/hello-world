@@ -1,0 +1,4 @@
+ALTER TABLE "Perfume" ADD COLUMN "topNotes" TEXT;
+ALTER TABLE "Perfume" ADD COLUMN "middleNotes" TEXT;
+ALTER TABLE "Perfume" ADD COLUMN "baseNotes" TEXT;
+ALTER TABLE "Perfume" ADD COLUMN "catalogRating" DOUBLE PRECISION;
