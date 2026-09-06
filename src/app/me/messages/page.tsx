@@ -20,7 +20,7 @@ export default async function MessagesPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-4xl">Messages</h1>
-      {threads.length === 0 ? <p className="text-muted">Buy or accept a bid to start a chat.</p> : null}
+      {threads.length === 0 ? <p className="text-muted">Place a bid or buy a perfume to start a chat.</p> : null}
       <ul className="space-y-3">
         {threads.map((t) => (
           <li key={t.id} className="card p-4">

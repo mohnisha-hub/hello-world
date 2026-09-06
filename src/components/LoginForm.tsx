@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { loginAction } from "@/actions/auth";
+import { googleLoginAction, loginAction } from "@/actions/auth";
 
-export function LoginForm({ from, setupError }: { from: string; setupError?: string | null }) {
+export function LoginForm({ from, setupError, googleEnabled }: { from: string; setupError?: string | null; googleEnabled: boolean }) {
   const [error, setError] = useState<string | null>(setupError ?? null);
   return (
     <form
@@ -29,6 +29,11 @@ export function LoginForm({ from, setupError }: { from: string; setupError?: str
       <button className="btn" type="submit">
         Continue
       </button>
+      {googleEnabled ? (
+        <button className="btn btn-ghost" formAction={googleLoginAction} type="submit">
+          Continue with Google
+        </button>
+      ) : null}
       <p className="text-sm text-muted">
         New here? <Link href={`/signup?from=${encodeURIComponent(from)}`}>Sign up</Link>
       </p>

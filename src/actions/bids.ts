@@ -47,18 +47,28 @@ export async function placeBidAction(formData: FormData) {
   if (amountCents <= minimum) {
     return { error: `Bid must be more than the minimum of ${formatMoney(minimum)}.` };
   }
-  await prisma.bid.create({
-    data: {
-      perfumeId,
-      bidderId: user.id,
-      sellerId: perfume.ownerId,
-      amountCents,
-      kind: "bid",
-    },
+  const conversation = await prisma.$transaction(async (tx) => {
+    const bid = await tx.bid.create({
+      data: {
+        perfumeId,
+        bidderId: user.id,
+        sellerId: perfume.ownerId,
+        amountCents,
+        kind: "bid",
+      },
+    });
+    const convo = await tx.conversation.create({ data: { bidId: bid.id } });
+    await tx.message.create({
+      data: {
+        conversationId: convo.id,
+        senderId: user.id,
+        body: `Bid for ${perfume.name} at ${formatMoney(amountCents)}. Listing: /p/${perfume.id}`,
+      },
+    });
+    return convo;
   });
-  revalidatePath("/me/bids");
-  revalidatePath(`/p/${perfumeId}`);
-  return { ok: true };
+  revalidateDeal((await prisma.user.findUnique({ where: { id: perfume.ownerId }, select: { username: true } }))?.username ?? "", perfumeId);
+  redirect(`/me/messages/${conversation.id}`);
 }
 
 export async function buyPerfumeAction(formData: FormData) {

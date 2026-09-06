@@ -11,8 +11,9 @@ datasource db {
 model User {
   id            String   @id @default(cuid())
   username      String   @unique
-  passwordHash  String
+  passwordHash  String?
   email         String?
+  googleId      String?  @unique
   workNumber    String?
   bio           String?
   location      String?

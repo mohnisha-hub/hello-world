@@ -37,6 +37,15 @@ export async function loginAction(formData: FormData) {
   redirect(safeFrom);
 }
 
+export async function googleLoginAction(formData: FormData) {
+  // The button is only rendered when both credentials are configured. Keep
+  // this guard for direct form submissions without returning a value: React
+  // server form actions must resolve to void.
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !isDatabaseConfigured()) return;
+  const safeFrom = safePath(String(formData.get("from") ?? "/me/profile"));
+  await signIn("google", { redirectTo: safeFrom });
+}
+
 export async function signupAction(formData: FormData) {
   const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
