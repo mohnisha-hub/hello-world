@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atelier — Haute Parfumerie Community & Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+</head>
+<body class="atelier-theme">
+    <!-- Ambient Backdrop Effects -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+
+    <!-- Navigation Header -->
+    <header class="atelier-header">
+        <div class="header-container">
+            <div class="brand-block" onclick="navigateTo('explore')">
+                <div class="brand-monogram">A</div>
+                <div class="brand-text">
+                    <span class="brand-title">ATELIER</span>
+                    <span class="brand-subtitle">HAUTE PARFUMERIE COMMUNITY</span>
+                </div>
+            </div>
+
+            <!-- Global Search & Suggestions -->
+            <div class="search-wrapper">
+                <div class="search-input-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="globalSearchInput" placeholder="Search by perfume name, brand, or olfactory note (e.g. Vanilla, Aventus, Oud)..." autocomplete="off">
+                    <button class="clear-search-btn" id="clearSearchBtn" onclick="clearGlobalSearch()" style="display:none;">&times;</button>
+                </div>
+                <!-- Dropdown suggestions container -->
+                <div class="search-suggestions-dropdown" id="searchSuggestionsDropdown" style="display: none;"></div>
+            </div>
+
+            <!-- Header Actions & Persona Switcher -->
+            <div class="header-actions">
+                <button class="btn-create-listing" onclick="navigateTo('create')">
+                    <span class="plus-icon">+</span> List Perfume
+                </button>
+
+                <!-- Persona Switcher -->
+                <div class="persona-switcher-dropdown">
+                    <div class="persona-badge" id="currentPersonaBadge" onclick="togglePersonaMenu()">
+                        <img id="headerUserAvatar" src="" alt="Avatar" class="header-avatar">
+                        <div class="header-user-info">
+                            <span class="header-username" id="headerUsername">Loading...</span>
+                            <span class="persona-switch-hint">Switch Member ▼</span>
+                        </div>
+                    </div>
+                    <div class="persona-menu" id="personaMenu" style="display:none;">
+                        <div class="persona-menu-header">Active Member Profile</div>
+                        <div id="personaList" class="persona-list"></div>
+                        <div class="persona-menu-footer">
+                            <button class="btn-reset-demo" onclick="resetDemoData()">↺ Reset Demo Data</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications & Messages Quick Icons -->
+                <button class="icon-btn" id="messagesNavBtn" onclick="navigateTo('chats')" title="Messages">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="badge-dot" id="unreadChatsBadge" style="display: none;"></span>
+                </button>
+
+                <div class="notifications-wrapper">
+                    <button class="icon-btn" id="notifBellBtn" onclick="toggleNotifications()" title="Notifications">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="badge-count" id="notifCount" style="display: none;">0</span>
+                    </button>
+                    <div class="notifications-dropdown" id="notifDropdown" style="display: none;">
+                        <div class="notif-header">
+                            <span>Notifications</span>
+                            <button class="text-btn" onclick="markAllNotificationsRead()">Mark all as read</button>
+                        </div>
+                        <div class="notif-list" id="notifList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs Bar -->
+        <nav class="sub-nav-bar">
+            <div class="nav-tabs-container">
+                <button class="nav-tab active" data-view="explore" onclick="navigateTo('explore')">
+                    <span class="tab-icon">🏛️</span> Explore Vault
+                </button>
+                <button class="nav-tab" data-view="notes" onclick="navigateTo('notes')">
+                    <span class="tab-icon">🌿</span> Notes Explorer
+                </button>
+                <button class="nav-tab" data-view="wishlist" onclick="navigateTo('wishlist')">
+                    <span class="tab-icon">❤️</span> Wishlist <span class="tab-counter" id="wishlistCount">0</span>
+                </button>
+                <button class="nav-tab" data-view="studio" onclick="navigateTo('create')">
+                    <span class="tab-icon">✨</span> Create Listing / Collection
+                </button>
+                <button class="nav-tab" data-view="activity" onclick="navigateTo('activity')">
+                    <span class="tab-icon">🏷️</span> Buys & Bids Hub
+                </button>
+                <button class="nav-tab" data-view="chats" onclick="navigateTo('chats')">
+                    <span class="tab-icon">💬</span> Messages & Deals
+                </button>
+                <button class="nav-tab" data-view="profile" onclick="navigateTo('profile')">
+                    <span class="tab-icon">👤</span> My Atelier Profile
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="atelier-main">
+
+        <!-- ============================================== -->
+        <!-- VIEW 1: EXPLORE & MARKETPLACE FEED -->
+        <!-- ============================================== -->
+        <section id="view-explore" class="app-view active">
+            <!-- Hero Spotlight -->
+            <div class="hero-banner">
+                <div class="hero-content">
+                    <div class="hero-tag">AUTHENTIC FRAGRANCE COMMUNITY IN INDIA</div>
+                    <h1 class="hero-title">Discover, Trade & Collect <br><span class="gradient-text">Rare & Niche Flacons</span></h1>
+                    <p class="hero-description">
+                        Explore full bottles, rare vintage testers, and authentic decants backed by Fragrantica olfactory ratings, live transparent bidding, and direct buyer-seller messaging.
+                    </p>
+                    <div class="hero-stats-row">
+                        <div class="stat-pill"><span class="stat-num" id="statTotalListings">--</span> Active Listings</div>
+                        <div class="stat-pill"><span class="stat-num">INR (₹)</span> Scalable Currency</div>
+                        <div class="stat-pill"><span class="stat-num">Fragrantica™</span> Auto-Enriched</div>
+                        <div class="stat-pill"><span class="stat-num">100%</span> Member Verified</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collections Carousel Showcase -->
+            <div class="section-container" id="featuredCollectionsSection">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-heading">Curated Member Collections</h2>
+                        <p class="section-subheading">Thematic vaults and discovery sets crafted by top community collectors</p>
+                    </div>
+                </div>
+                <div class="collections-grid" id="collectionsGrid"></div>
+            </div>
+
+            <!-- Search Filter Bar -->
+            <div class="section-container">
+                <div class="feed-filter-bar">
+                    <div class="filter-chips-group">
+                        <button class="filter-chip active" data-filter="all" onclick="setListingFilter('type', 'all')">All Offerings</button>
+                        <button class="filter-chip" data-filter="bottle" onclick="setListingFilter('type', 'bottle')">🍾 Full Bottles</button>
+                        <button class="filter-chip" data-filter="tester" onclick="setListingFilter('type', 'tester')">🏷️ Testers</button>
+                        <button class="filter-chip" data-filter="decant" onclick="setListingFilter('type', 'decant')">🧪 Decants</button>
+                        <button class="filter-chip" data-filter="bids" onclick="setListingFilter('acceptBids', 'true')">🔥 Accepting Bids</button>
+                    </div>
+                    <div class="filter-controls-right">
+                        <select id="sortListingsSelect" class="form-select-sm" onchange="applyListingSorting()">
+                            <option value="newest">Sort: Newest First</option>
+                            <option value="price_asc">Price: Low to High</option>
+                            <option value="price_desc">Price: High to Low</option>
+                            <option value="rating">Fragrantica Rating</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Active Filter Announcement -->
+                <div id="activeFilterBadgeContainer" class="active-filter-banner" style="display:none;">
+                    <span id="activeFilterText">Filtered</span>
+                    <button class="btn-clear-filter" onclick="clearFilters()">Clear Filters &times;</button>
+                </div>
+
+                <!-- Listings Grid -->
+                <div class="listings-grid" id="listingsGrid"></div>
+                <div class="empty-state" id="emptyListingsState" style="display:none;">
+                    <div class="empty-icon">🏺</div>
+                    <h3>No Fragrances Found</h3>
+                    <p>Try searching for another house, note, or clear your filters.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- VIEW 2: NOTES EXPLORER -->
+        <!-- ============================================== -->
+        <section id="view-notes" class="app-view">
+            <div class="section-container">
+                <div class="notes-explorer-hero">
+                    <div class="hero-tag">OLFACTORY PYRAMID & ACCORDS</div>
+                    <h2 class="section-heading">Search by Fragrance Notes</h2>
+                    <p class="section-subheading">Select any note below to reveal all community sellers carrying perfumes featuring that note.</p>
+                    
+                    <!-- Search within notes -->
+                    <div class="note-search-input-box">
+                        <input type="text" id="noteSearchFilter" placeholder="Filter notes (e.g. Vanilla, Oud, Cardamom, Rose, Iris, Leather)..." oninput="filterNotesDirectory()">
+                    </div>
+                </div>
+
+                <!-- Notes Cloud / Pills -->
+                <div class="notes-cloud-container" id="notesCloud"></div>
+
+                <!-- Note Results Container (Selected note sellers & perfumes) -->
+                <div class="note-results-wrapper" id="noteResultsWrapper" style="display:none;">
+                    <div class="note-results-header">
+                        <div>
+                            <h3 class="note-selected-title" id="noteSelectedTitle">Perfumes featuring "Vanilla"</h3>
+                            <p class="note-selected-subtitle" id="noteSelectedSubtitle">Showing community sellers carrying this olfactory signature</p>
+                        </div>
+                        <button class="btn-outline-sm" onclick="closeNoteExplorerResults()">Back to All Notes</button>
+                    </div>
+                    
+                    <!-- Sellers carrying note -->
+                    <div class="note-sellers-showcase" id="noteSellersShowcase"></div>
+
+                    <!-- Matching Perfume Listings -->
+                    <h4 class="sub-heading-refined">Available Perfumes with this Note</h4>
+                    <div class="listings-grid" id="noteListingsGrid"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- VIEW 3: WISHLIST -->
+        <!-- ============================================== -->
+        <section id="view-wishlist" class="app-view">
+            <div class="section-container">
+                <div class="section-header">
+                    <div>
+                        <div class="hero-tag">PERSONAL CURATION</div>
+                        <h2 class="section-heading">My Wishlist</h2>
+                        <p class="section-subheading">Flacons and decants you are keeping an eye on</p>
+                    </div>
+                </div>
+                <div class="listings-grid" id="wishlistGrid"></div>
+                <div class="empty-state" id="emptyWishlistState" style="display:none;">
+                    <div class="empty-icon">❤️</div>
+                    <h3>Your Wishlist is Empty</h3>
+                    <p>Explore the vault and click the heart icon on any perfume to save it here for quick access.</p>
+                    <button class="btn-primary" onclick="navigateTo('explore')">Explore Perfumes</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- VIEW 4: CREATE LISTING & COLLECTION STUDIO -->
+        <!-- ============================================== -->
+        <section id="view-create" class="app-view">
+            <div class="section-container studio-container">
+                <div class="studio-header">
+                    <div>
+                        <div class="hero-tag">ATELIER CURATION STUDIO</div>
+                        <h2 class="section-heading">List a Perfume or Collection</h2>
+                        <p class="section-subheading">Create a standalone perfume listing or group multiple scents into a themed collection.</p>
+                    </div>
+                </div>
+
+                <!-- Motivation Completion Meter Card -->
+                <div class="completion-meter-card">
+                    <div class="meter-header">
+                        <div class="meter-title-row">
+                            <span class="meter-label">Listing Completeness & Motivation Score</span>
+                            <span class="meter-percentage" id="completionMeterPercent">0%</span>
+                        </div>
+                        <div class="meter-bar-track">
+                            <div class="meter-bar-fill" id="completionMeterFill" style="width: 0%;"></div>
+                        </div>
+                        <div class="meter-badges-row" id="meterBadgesRow">
+                            <span class="meter-badge active" id="badgeBasic">Basic Details</span>
+                            <span class="meter-badge" id="badgeFragrantica">Fragrantica Enriched</span>
+                            <span class="meter-badge" id="badgeVisual">Flacon Imagery</span>
+                            <span class="meter-badge" id="badgeSpecs">Bottle & ml Specs</span>
+                            <span class="meter-badge" id="badgeProvenance">Provenance & Links</span>
+                        </div>
+                    </div>
+                    <div class="meter-tips" id="meterTips">
+                        💡 <strong>Motivation Tip:</strong> Complete all optional fields (notes, ml, links, condition) to achieve 100% and earn the <em>"Verified Connoisseur"</em> badge on your listing.
+                    </div>
+                </div>
+
+                <!-- Creation Form Tabs (Standalone vs Collection) -->
+                <div class="studio-form-card">
+                    <div class="studio-type-selector">
+                        <button type="button" class="studio-type-btn active" id="btnTypeStandalone" onclick="switchStudioMode('standalone')">
+                            <span class="type-icon">🍾</span>
+                            <div>
+                                <strong>Standalone Perfume</strong>
+                                <small>List an individual flacon, tester, or decant</small>
+                            </div>
+                        </button>
+                        <button type="button" class="studio-type-btn" id="btnTypeCollection" onclick="switchStudioMode('collection')">
+                            <span class="type-icon">🏛️</span>
+                            <div>
+                                <strong>Perfume Collection</strong>
+                                <small>Create a curated multi-bottle vault or discovery set</small>
+                            </div>
+                        </button>
+                    </div>
+
+                    <form id="listingCreationForm" onsubmit="handleListingSubmit(event)">
+                        
+                        <!-- Collection Details (Shown only when Collection mode is active) -->
+                        <div id="collectionFieldsSection" class="form-section" style="display:none;">
+                            <h3 class="form-section-title">1. Collection Overview</h3>
+                            <div class="form-row">
+                                <div class="form-group flex-2">
+                                    <label for="collectionNameInput">Collection Name <span class="required">*</span></label>
+                                    <input type="text" id="collectionNameInput" class="form-input" placeholder="e.g. The Parisian Amber Vault, Vintage Chypre Trilogy...">
+                                </div>
+                                <div class="form-group flex-2">
+                                    <label for="collectionImageInput">Collection Cover Image URL (Optional)</label>
+                                    <input type="url" id="collectionImageInput" class="form-input" placeholder="https://images.unsplash.com/...">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="collectionDescInput">Collection Story & Theme (Optional)</label>
+                                <textarea id="collectionDescInput" class="form-textarea" rows="2" placeholder="Describe the concept behind this curated set..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Perfume Mandatory Details & Fragrantica Autocomplete -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">
+                                <span id="perfumeSectionNum">1.</span> Perfume Information & Fragrantica Auto-Fill
+                            </h3>
+                            
+                            <!-- Autocomplete input -->
+                            <div class="form-group relative">
+                                <label for="perfumeNameInput">Perfume Name <span class="required">* (Mandatory)</span></label>
+                                <div class="input-with-icon">
+                                    <input type="text" id="perfumeNameInput" class="form-input" placeholder="Start typing (e.g. Aventus, Baccarat Rouge 540, Grand Soir, Santal 33, Layton)..." autocomplete="off" oninput="handleFragranticaInput(this.value)">
+                                    <span class="input-spinner" id="fragranticaSpinner" style="display:none;">⏳</span>
+                                </div>
+                                <small class="form-hint">✨ Typing an existing fragrance auto-suggests matches from Fragrantica and instantly imports ratings, notes pyramid & imagery.</small>
+                                
+                                <!-- Fragrantica Auto-Suggestions Dropdown -->
+                                <div class="fragrantica-suggestions-dropdown" id="fragranticaSuggestionsDropdown" style="display:none;"></div>
+                            </div>
+
+                            <!-- Fragrantica Auto-Filled Preview Card -->
+                            <div class="fragrantica-autofilled-card" id="fragranticaAutofilledCard" style="display:none;">
+                                <div class="frag-card-left">
+                                    <img id="fragPreviewImg" src="" alt="Flacon" class="frag-preview-flacon">
+                                </div>
+                                <div class="frag-card-body">
+                                    <div class="frag-card-badge-row">
+                                        <span class="frag-verified-badge">✓ Imported from Fragrantica</span>
+                                        <span class="frag-rating-chip" id="fragPreviewRating">★ 4.53 (9,480 votes)</span>
+                                    </div>
+                                    <h4 id="fragPreviewTitle" class="frag-preview-title">Grand Soir</h4>
+                                    <p id="fragPreviewBrand" class="frag-preview-brand">Maison Francis Kurkdjian</p>
+
+                                    <!-- Olfactory Notes Preview -->
+                                    <div class="olfactory-mini-pyramid">
+                                        <div class="olfactory-row">
+                                            <span class="olfactory-label">Top:</span>
+                                            <div class="notes-badges-list" id="fragPreviewTopNotes"></div>
+                                        </div>
+                                        <div class="olfactory-row">
+                                            <span class="olfactory-label">Heart:</span>
+                                            <div class="notes-badges-list" id="fragPreviewMiddleNotes"></div>
+                                        </div>
+                                        <div class="olfactory-row">
+                                            <span class="olfactory-label">Base:</span>
+                                            <div class="notes-badges-list" id="fragPreviewBaseNotes"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-remove-frag" onclick="clearFragranticaAutofill()" title="Clear Fragrantica Auto-fill">&times;</button>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group flex-2">
+                                    <label for="perfumeBrandInput">Brand / Fragrance House (Optional)</label>
+                                    <input type="text" id="perfumeBrandInput" class="form-input" placeholder="e.g. Maison Francis Kurkdjian, Creed, Tom Ford...">
+                                </div>
+                                <div class="form-group flex-2">
+                                    <label for="perfumeImageInput">Flacon Image URL (Optional - Auto-filled if available)</label>
+                                    <input type="url" id="perfumeImageInput" class="form-input" placeholder="https://..." oninput="updateListingCompletion()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pricing & Bidding Engine (Mandatory) -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">2. Pricing & Bidding Model (INR ₹) <span class="required">* (Mandatory)</span></h3>
+                            
+                            <div class="pricing-model-switch">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="acceptBidsCheckbox" onchange="toggleBiddingMode(this.checked)">
+                                    <span class="checkmark"></span>
+                                    <span class="checkbox-label">
+                                        <strong>Accept Bids</strong> (Allow community members to place offers starting from a minimum reserve)
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="form-row" id="fixedPriceRow">
+                                <div class="form-group flex-2">
+                                    <label for="perfumePriceInput">Fixed Price (INR ₹) <span class="required">*</span></label>
+                                    <div class="currency-input-wrapper">
+                                        <span class="currency-symbol">₹</span>
+                                        <input type="number" id="perfumePriceInput" class="form-input currency-input" placeholder="e.g. 14500" min="1" step="10" oninput="updateListingCompletion()">
+                                    </div>
+                                    <small class="form-hint">Direct buy price in Indian Rupees.</small>
+                                </div>
+                            </div>
+
+                            <div class="form-row" id="biddingPriceRow" style="display:none;">
+                                <div class="form-group flex-2">
+                                    <label for="perfumeMinBidInput">Minimum Starting Bid (INR ₹) <span class="required">*</span></label>
+                                    <div class="currency-input-wrapper">
+                                        <span class="currency-symbol">₹</span>
+                                        <input type="number" id="perfumeMinBidInput" class="form-input currency-input" placeholder="e.g. 12000" min="1" step="50" oninput="updateListingCompletion()">
+                                    </div>
+                                    <small class="form-hint">Buyers can bid any amount equal to or above this minimum bid. You can review and accept bids at any time.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item Specs & Condition (Optional but increases completion %) -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">3. Item Specifications & Level (Optional)</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label for="itemTypeSelect">Offering Type</label>
+                                    <select id="itemTypeSelect" class="form-select" onchange="handleItemTypeChange(this.value)">
+                                        <option value="bottle">🍾 Full Presentation Bottle</option>
+                                        <option value="tester">🏷️ Official Tester</option>
+                                        <option value="decant">🧪 Decant / Atomizer</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group flex-1" id="fillStatusGroup">
+                                    <label for="fillStatusSelect">Bottle Fill Level</label>
+                                    <select id="fillStatusSelect" class="form-select" onchange="updateListingCompletion()">
+                                        <option value="full">Full / Brand New (BNIB / 100%)</option>
+                                        <option value="partial">Partial / Pre-loved</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group flex-1">
+                                    <label for="perfumeMlInput">Volume (ml)</label>
+                                    <input type="number" id="perfumeMlInput" class="form-input" placeholder="e.g. 10, 50, 70, 100, 125" min="1" max="1000" oninput="updateListingCompletion()">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="shippingIncludedCheckbox" onchange="updateListingCompletion()">
+                                    <span class="checkmark"></span>
+                                    <span class="checkbox-label">
+                                        <strong>Shipping Included</strong> (Pan-India express courier with tamper-evident packaging included in price)
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- External Links & Story (Optional) -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">4. External Links, Provenance & Description (Optional)</h3>
+                            
+                            <div class="form-group">
+                                <label for="perfumeDescriptionInput">Description & Batch Code Details</label>
+                                <textarea id="perfumeDescriptionInput" class="form-textarea" rows="3" placeholder="Mention batch code, storage condition (dark climate vault), invoice/boutique source, reason for selling..." oninput="updateListingCompletion()"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>External Links (Fragrantica reviews, checkfresh verification, Instagram decant video)</label>
+                                <div id="externalLinksContainer" class="external-links-container">
+                                    <div class="external-link-row">
+                                        <input type="text" class="form-input link-label" placeholder="Link Label (e.g. Fragrantica Review)" value="Fragrantica Page">
+                                        <input type="url" class="form-input link-url" placeholder="https://...">
+                                        <button type="button" class="btn-remove-link" onclick="removeLinkRow(this)">&times;</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-secondary-sm" onclick="addLinkRow()">+ Add Another Link</button>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions (Draft vs Publish) -->
+                        <div class="form-actions-bar">
+                            <div class="action-status-indicator">
+                                <span id="formValidationStatusText">Fill mandatory fields to publish</span>
+                            </div>
+                            <div class="action-buttons-group">
+                                <button type="button" class="btn-draft" onclick="submitListing('draft')">
+                                    💾 Save as Draft
+                                </button>
+                                <button type="button" class="btn-primary" onclick="submitListing('published')">
+                                    🚀 Publish to Atelier
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- VIEW 5: BUYS & BIDS HUB (ACTIVITY) -->
+        <!-- ============================================== -->
+        <section id="view-activity" class="app-view">
+            <div class="section-container">
+                <div class="section-header">
+                    <div>
+                        <div class="hero-tag">TRANSACTIONS & BIDS</div>
+                        <h2 class="section-heading">Buys, Bids & Offers Hub</h2>
+                        <p class="section-subheading">Track your active bids, review received offers on your listings, and manage purchases.</p>
+                    </div>
+                </div>
+
+                <div class="hub-tabs-row">
+                    <button class="hub-tab active" data-hub-tab="received_bids" onclick="switchHubTab('received_bids')">
+                        🏷️ Bids Received on My Listings <span class="tab-badge" id="receivedBidsBadge">0</span>
+                    </button>
+                    <button class="hub-tab" data-hub-tab="placed_bids" onclick="switchHubTab('placed_bids')">
+                        ⚡ My Placed Bids <span class="tab-badge" id="placedBidsBadge">0</span>
+                    </button>
+                    <button class="hub-tab" data-hub-tab="buys" onclick="switchHubTab('buys')">
+                        🛍️ My Purchases (Buys) <span class="tab-badge" id="myBuysBadge">0</span>
+                    </button>
+                    <button class="hub-tab" data-hub-tab="sales" onclick="switchHubTab('sales')">
+                        📦 My Sales <span class="tab-badge" id="mySalesBadge">0</span>
+                    </button>
+                </div>
+
+                <!-- Hub Content Panes -->
+                <div id="hubPaneReceivedBids" class="hub-pane active">
+                    <div id="receivedBidsList" class="bids-management-list"></div>
+                </div>
+
+                <div id="hubPanePlacedBids" class="hub-pane" style="display:none;">
+                    <div id="placedBidsList" class="bids-management-list"></div>
+                </div>
+
+                <div id="hubPaneBuys" class="hub-pane" style="display:none;">
+                    <div id="buysList" class="orders-list"></div>
+                </div>
+
+                <div id="hubPaneSales" class="hub-pane" style="display:none;">
+                    <div id="salesList" class="orders-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- VIEW 6: LIVE CHAT MESSENGER -->
+        <!-- ============================================== -->
+        <section id="view-chats" class="app-view">
+            <div class="section-container chat-layout-container">
+                <!-- Chat Sidebar (Threads List) -->
+                <div class="chat-threads-sidebar">
+                    <div class="threads-header">
+                        <h3>Conversations & Deals</h3>
+                        <span class="threads-count" id="threadsCount">0 threads</span>
+                    </div>
+                    <div class="threads-list" id="chatThreadsList"></div>
+                </div>
+
+                <!-- Active Chat Pane -->
+                <div class="chat-conversation-pane" id="chatConversationPane">
+                    <div class="chat-placeholder-empty" id="chatEmptyState">
+                        <div class="empty-icon">💬</div>
+                        <h3>No Conversation Selected</h3>
+                        <p>Select a thread from the left or complete a Buy/Bid to initiate deal discussions.</p>
+                    </div>
+
+                    <div class="active-chat-content" id="activeChatContent" style="display:none;">
+                        <!-- Chat Header -->
+                        <div class="active-chat-header">
+                            <div class="chat-user-meta">
+                                <img id="chatRecipientAvatar" src="" alt="Avatar" class="avatar-round">
+                                <div>
+                                    <h4 id="chatRecipientName">Aarav Mehta</h4>
+                                    <span id="chatRecipientLocation" class="text-muted">Mumbai, India</span>
+                                </div>
+                            </div>
+                            <div class="chat-product-badge" id="chatProductBadge" onclick="openActiveChatListing()">
+                                <img id="chatProductImg" src="" alt="Product" class="chat-product-thumb">
+                                <div class="chat-product-info">
+                                    <strong id="chatProductTitle">Grand Soir</strong>
+                                    <span id="chatProductPrice">₹14,200</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Messages Stream -->
+                        <div class="chat-messages-stream" id="chatMessagesStream"></div>
+
+                        <!-- Chat Input Box -->
+                        <form class="chat-input-form" onsubmit="sendChatMessage(event)">
+                            <input type="text" id="chatTextInput" class="form-input" placeholder="Type your message, delivery address, or confirmation details..." autocomplete="off">
+                            <button type="submit" class="btn-primary btn-send">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- VIEW 7: MY ATELIER PROFILE MANAGEMENT -->
+        <!-- ============================================== -->
+        <section id="view-profile" class="app-view">
+            <div class="section-container profile-page-container">
+                <div class="profile-header-banner">
+                    <div class="profile-avatar-wrapper">
+                        <img id="profilePageAvatar" src="" alt="Avatar" class="profile-large-avatar">
+                    </div>
+                    <div class="profile-summary-info">
+                        <div class="profile-name-row">
+                            <h2 id="profilePageName">Mohnish Sharma</h2>
+                            <span class="verified-badge-pill" id="profilePageBadge">✓ Verified Atelier Connoisseur</span>
+                        </div>
+                        <p class="profile-username" id="profilePageUsername">@mohnu_scents</p>
+                        <p class="profile-location" id="profilePageLocation">📍 Pune, Maharashtra</p>
+                        <p class="profile-bio" id="profilePageBio">Gourmand and oriental perfume lover.</p>
+                        <div class="profile-status-pill" id="profileStatusPill">Status: Published</div>
+                    </div>
+                </div>
+
+                <!-- Profile Edit Form (Draft / Publish) -->
+                <div class="profile-edit-card">
+                    <h3 class="form-section-title">Edit Profile Settings</h3>
+                    <form id="profileEditForm" onsubmit="handleProfileSave(event)">
+                        <div class="form-row">
+                            <div class="form-group flex-2">
+                                <label for="editUsernameInput">Username <span class="required">* (Mandatory)</span></label>
+                                <input type="text" id="editUsernameInput" class="form-input" required placeholder="e.g. mohnu_scents">
+                            </div>
+                            <div class="form-group flex-2">
+                                <label for="editNameInput">Display Name</label>
+                                <input type="text" id="editNameInput" class="form-input" placeholder="e.g. Mohnish Sharma">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group flex-2">
+                                <label for="editPhotoInput">Avatar Photo URL</label>
+                                <input type="url" id="editPhotoInput" class="form-input" placeholder="https://images.unsplash.com/...">
+                            </div>
+                            <div class="form-group flex-2">
+                                <label for="editLocationInput">Location (City, State / Country)</label>
+                                <input type="text" id="editLocationInput" class="form-input" placeholder="e.g. Bandra, Mumbai">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="editBioInput">Bio & Olfactory Taste</label>
+                            <textarea id="editBioInput" class="form-textarea" rows="2" placeholder="Tell the community about your favorite notes, signature scents, decanting practices..."></textarea>
+                        </div>
+
+                        <div class="form-actions-bar">
+                            <span>Set status as draft (hidden) or publish to community</span>
+                            <div class="action-buttons-group">
+                                <button type="button" class="btn-draft" onclick="saveProfileStatus('draft')">Save Profile as Draft</button>
+                                <button type="button" class="btn-primary" onclick="saveProfileStatus('published')">Publish Profile Live</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- My Listings & Collections Management -->
+                <div class="my-vault-management">
+                    <div class="section-header">
+                        <div>
+                            <h3 class="section-heading">My Active Vault & Listings</h3>
+                            <p class="section-subheading">Manage your published perfumes, edit active listings, or publish drafts</p>
+                        </div>
+                    </div>
+                    <div class="listings-grid" id="myListingsGrid"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ============================================== -->
+    <!-- MODALS & OVERLAYS -->
+    <!-- ============================================== -->
+
+    <!-- PERFUME DETAILS MODAL -->
+    <div class="modal-overlay" id="perfumeDetailsModal" style="display:none;" onclick="closeModalOnBackdrop(event, 'perfumeDetailsModal')">
+        <div class="modal-card modal-lg">
+            <button class="modal-close-btn" onclick="closeModal('perfumeDetailsModal')">&times;</button>
+            <div class="modal-body modal-perfume-details" id="perfumeModalContent"></div>
+        </div>
+    </div>
+
+    <!-- SELLER PUBLIC STOREFRONT MODAL -->
+    <div class="modal-overlay" id="sellerStorefrontModal" style="display:none;" onclick="closeModalOnBackdrop(event, 'sellerStorefrontModal')">
+        <div class="modal-card modal-lg">
+            <button class="modal-close-btn" onclick="closeModal('sellerStorefrontModal')">&times;</button>
+            <div class="modal-body" id="sellerStorefrontContent"></div>
+        </div>
+    </div>
+
+    <!-- PLACE BID MODAL -->
+    <div class="modal-overlay" id="placeBidModal" style="display:none;" onclick="closeModalOnBackdrop(event, 'placeBidModal')">
+        <div class="modal-card modal-sm">
+            <button class="modal-close-btn" onclick="closeModal('placeBidModal')">&times;</button>
+            <div class="modal-body">
+                <div class="bid-modal-header">
+                    <span class="hero-tag">ATELIER BIDDING ENGINE</span>
+                    <h3 class="modal-title" id="bidModalPerfumeName">Place a Bid</h3>
+                    <p class="text-muted" id="bidModalPerfumeBrand">Brand House</p>
+                </div>
+
+                <div class="bid-current-info-card">
+                    <div class="bid-info-row">
+                        <span>Minimum Starting Bid:</span>
+                        <strong id="bidModalMinBid">₹0</strong>
+                    </div>
+                    <div class="bid-info-row">
+                        <span>Current Highest Bid:</span>
+                        <strong class="highlight-gold" id="bidModalCurrentHigh">None yet</strong>
+                    </div>
+                </div>
+
+                <form id="placeBidForm" onsubmit="handleBidSubmit(event)">
+                    <input type="hidden" id="bidModalListingId" value="">
+                    <div class="form-group">
+                        <label for="bidAmountInput">Your Bid Amount (INR ₹) <span class="required">*</span></label>
+                        <div class="currency-input-wrapper">
+                            <span class="currency-symbol">₹</span>
+                            <input type="number" id="bidAmountInput" class="form-input currency-input" required min="1" step="50" placeholder="Enter bid">
+                        </div>
+                        <small class="form-hint" id="bidModalHint">Must be greater than current highest bid.</small>
+                    </div>
+
+                    <div class="modal-actions-row">
+                        <button type="button" class="btn-outline" onclick="closeModal('placeBidModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Submit Bid</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIRECT BUY CONFIRMATION MODAL -->
+    <div class="modal-overlay" id="directBuyModal" style="display:none;" onclick="closeModalOnBackdrop(event, 'directBuyModal')">
+        <div class="modal-card modal-sm">
+            <button class="modal-close-btn" onclick="closeModal('directBuyModal')">&times;</button>
+            <div class="modal-body">
+                <div class="buy-modal-header">
+                    <span class="hero-tag">INSTANT PURCHASE</span>
+                    <h3 class="modal-title">Confirm Direct Buy</h3>
+                    <p class="text-muted">Buying directly creates an order and automatically opens a secure chat thread with the seller.</p>
+                </div>
+
+                <div class="buy-summary-card">
+                    <div class="buy-item-preview">
+                        <img id="buyModalImg" src="" alt="Perfume" class="buy-thumb">
+                        <div>
+                            <h4 id="buyModalTitle">Perfume Title</h4>
+                            <span id="buyModalSeller" class="text-muted">Seller: Aarav</span>
+                        </div>
+                    </div>
+                    <div class="buy-price-breakdown">
+                        <div class="breakdown-row">
+                            <span>Listing Amount:</span>
+                            <strong id="buyModalAmount">₹0</strong>
+                        </div>
+                        <div class="breakdown-row">
+                            <span>Shipping:</span>
+                            <span id="buyModalShipping" class="shipping-free">Included</span>
+                        </div>
+                        <div class="breakdown-divider"></div>
+                        <div class="breakdown-row total-row">
+                            <span>Total (INR):</span>
+                            <strong class="highlight-gold" id="buyModalTotal">₹0</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="buyModalListingId" value="">
+                <div class="modal-actions-row">
+                    <button type="button" class="btn-outline" onclick="closeModal('directBuyModal')">Cancel</button>
+                    <button type="button" class="btn-primary" onclick="confirmDirectBuy()">Confirm Purchase & Open Chat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
