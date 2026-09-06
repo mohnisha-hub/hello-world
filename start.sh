@@ -1,4 +1,5 @@
 #!/bin/bash
-# Start script for Aesthetic Hello World Web App
-echo "🚀 Starting Aesthetic Hello World App..."
-python3 server.py 8000
+# Start script for Atelier — Haute Parfumerie Community & Marketplace
+echo "🏛️ Starting Atelier Perfume Community Marketplace..."
+PORT="${1:-8080}"
+python3 server.py "$PORT"
