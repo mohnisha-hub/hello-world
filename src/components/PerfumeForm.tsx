@@ -51,8 +51,8 @@ export function PerfumeForm({
       ? String((perfume.minBidCents ?? perfume.priceCents) / 100)
       : "",
   );
-  const [kind, setKind] = useState(perfume?.kind ?? "");
-  const [fill, setFill] = useState(perfume?.fill ?? "");
+  const [kind, setKind] = useState(perfume?.kind === "bottle" ? "retail" : perfume?.kind ?? "");
+  const fill = null;
   const [ml, setMl] = useState(perfume?.ml != null ? String(perfume.ml) : "");
   const [shippingIncluded, setShippingIncluded] = useState<boolean | null>(
     perfume ? perfume.shippingIncluded : null,
@@ -254,27 +254,18 @@ export function PerfumeForm({
         </div>
       </div>
       <label className="field">
-        Type
-        <select name="kind" value={kind} onChange={(e) => setKind(e.target.value)}>
-          <option value="">Not specified</option>
-          <option value="bottle">Bottle</option>
+        Listing type
+        <select name="kind" required value={kind} onChange={(e) => setKind(e.target.value)}>
+          <option value="">Select a type</option>
+          <option value="retail">Retail</option>
           <option value="tester">Tester</option>
+          <option value="partial">Partial</option>
           <option value="decant">Decant</option>
         </select>
       </label>
-      {kind === "bottle" || kind === "tester" ? (
-        <label className="field">
-          Fill
-          <select name="fill" value={fill} onChange={(e) => setFill(e.target.value)}>
-            <option value="">Not specified</option>
-            <option value="full">Full</option>
-            <option value="partial">Partial</option>
-          </select>
-        </label>
-      ) : null}
       <label className="field">
         Millilitres
-        <input name="ml" type="number" min="0" step="0.1" value={ml} onChange={(e) => setMl(e.target.value)} />
+        <input name="ml" type="number" min="0.1" step="0.1" required value={ml} onChange={(e) => setMl(e.target.value)} />
       </label>
       <input type="hidden" name="shippingIncluded" value="false" />
       <label className="flex items-center gap-2 text-sm">

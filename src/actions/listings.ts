@@ -90,10 +90,14 @@ export async function savePerfumeAction(formData: FormData) {
     if (!col) return { error: "Collection not found." };
   }
 
-  const kind = String(formData.get("kind") ?? "") || null;
-  const fill = kind === "bottle" || kind === "tester" ? String(formData.get("fill") ?? "") || null : null;
+  const kind = String(formData.get("kind") ?? "");
+  if (!new Set(["retail", "tester", "partial", "decant"]).has(kind)) {
+    return { error: "Choose Retail, Tester, Partial, or Decant." };
+  }
+  const fill = null;
   const mlRaw = String(formData.get("ml") ?? "").trim();
   const ml = mlRaw ? Number(mlRaw) : null;
+  if (ml == null || !Number.isFinite(ml) || ml <= 0) return { error: "Enter the perfume volume in millilitres." };
   const shippingIncluded = formData.getAll("shippingIncluded").map(String).includes("true");
   const description = String(formData.get("description") ?? "").trim() || null;
   const topNotes = String(formData.get("topNotes") ?? "").trim() || null;

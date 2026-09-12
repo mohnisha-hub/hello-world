@@ -17,15 +17,12 @@ export async function Nav() {
           Atelier
         </Link>
         <nav className="flex flex-wrap items-center justify-end gap-4 text-sm">
-          <Link href="/">Home</Link>
           <Link href="/explore">Explore</Link>
           {session?.user ? (
             <>
               <Link href="/me">My feed</Link>
-              <Link href="/me/drafts">Drafts</Link>
-              <Link href="/me/wishlist">Wishlist</Link>
-              <Link href="/me/buys">Buys</Link>
-              <Link href="/me/bids">Bids</Link>
+              <Link href="/me/create">Create</Link>
+              <Link href="/me/activity">Activity</Link>
               <Link href="/me/messages">Messages</Link>
               <Link href="/me/profile">Profile</Link>
               <form action={logoutAction}>

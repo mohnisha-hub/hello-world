@@ -92,7 +92,7 @@ export default async function PerfumePage({
           {perfume.ml ? ` · ${perfume.ml} ml · ${formatPricePerMl(amount, perfume.ml)}` : ""}
         </p>
         {bidListing && highest && perfume.status === "published" ? (
-          <p className="text-sm">Highest bid: {formatMoney(highest.amountCents)} from @{highest.bidder.username}</p>
+          <p className="text-sm">Current highest bid: {formatMoney(highest.amountCents)}{isOwner ? ` from @${highest.bidder.username}` : ""}</p>
         ) : null}
         {perfume.catalogRating != null ? (
           <p className="text-sm">Community rating {perfume.catalogRating.toFixed(1)} / 5</p>
@@ -156,9 +156,9 @@ export default async function PerfumePage({
                 <input
                   name="amount"
                   type="number"
-                  min={amount / 100 + 0.01}
+                  min={(highest?.amountCents ?? amount) / 100 + 0.01}
                   step="0.01"
-                  placeholder={`More than ${formatMoney(amount)}`}
+                  placeholder={`More than ${formatMoney(highest?.amountCents ?? amount)}`}
                   required
                 />
                 <button className="btn" type="submit">

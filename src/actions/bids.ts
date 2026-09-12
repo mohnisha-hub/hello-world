@@ -44,8 +44,13 @@ export async function placeBidAction(formData: FormData) {
   if (perfume.ownerId === user.id) return { error: "You cannot bid on your own perfume." };
   if (!isBidListing(perfume.saleType)) return { error: "This perfume is buy-only." };
   const minimum = listingAmountCents(perfume);
-  if (amountCents <= minimum) {
-    return { error: `Bid must be more than the minimum of ${formatMoney(minimum)}.` };
+  const highestOpenBid = await prisma.bid.findFirst({
+    where: { perfumeId, kind: "bid", status: "open" },
+    orderBy: { amountCents: "desc" },
+  });
+  const requiredAmount = Math.max(minimum, highestOpenBid?.amountCents ?? 0);
+  if (amountCents <= requiredAmount) {
+    return { error: `Bid must be more than the current highest bid of ${formatMoney(requiredAmount)}.` };
   }
   const conversation = await prisma.$transaction(async (tx) => {
     const bid = await tx.bid.create({
