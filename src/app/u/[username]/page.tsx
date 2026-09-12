@@ -71,7 +71,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             <h1 className="text-3xl sm:text-4xl">@{user.username}</h1>
             {isOwner ? <StatusBadge status={user.profileStatus} /> : null}
           </div>
-          <p className="mt-1 text-sm text-muted">{user.location || "Somewhere scented"} · Collector</p>
+          <p className="mt-1 text-sm text-muted">{user.location || "Somewhere scented"}</p>
           {rating ? (
             <p className="text-sm">
               {rating.average.toFixed(1)} / 10 · {rating.count} rating{rating.count === 1 ? "" : "s"}
@@ -81,7 +81,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </div>
           <div className="flex flex-wrap gap-2">
             {isOwner ? <Link className="btn btn-ghost" href="/me/profile">Edit profile</Link> : null}
-            {isOwner ? <Link className="btn" href="/me/create">Add to collection</Link> : null}
+            {isOwner ? <Link className="btn" href="/me/collections/new">Add Collection</Link> : null}
+            {isOwner ? <Link className="btn btn-ghost" href="/me/collections">Edit Collection</Link> : null}
             {!isOwner ? <Link className="btn btn-ghost" href="/explore">Explore scents</Link> : null}
           </div>
         </div>
@@ -184,5 +185,5 @@ function WishlistMiniCard({ href, title, meta }: { href: string; title: string; 
 }
 
 function OwnerActions({ targetType, targetId, pinned, editHref, canSell }: { targetType: "collection" | "perfume"; targetId: string; pinned: boolean; editHref: string; canSell?: boolean }) {
-  return <div className="flex flex-wrap gap-2 px-1 pt-2 text-xs text-muted"><Link href={editHref}>Edit</Link><form action={pinForm}><input type="hidden" name="targetType" value={targetType} /><input type="hidden" name="targetId" value={targetId} /><button type="submit">{pinned ? "Unpin" : "Pin"}</button></form>{canSell ? <><form action={soldForm}><input type="hidden" name="id" value={targetId} /><button type="submit">Mark sold</button></form><form action={deletePerfumeForm}><input type="hidden" name="id" value={targetId} /><button type="submit">Delete</button></form></> : null}</div>;
+  return <div className="flex flex-wrap gap-2 px-1 pt-2 text-xs"><Link className="card-action" href={editHref}>Edit</Link><form action={pinForm}><input type="hidden" name="targetType" value={targetType} /><input type="hidden" name="targetId" value={targetId} /><button className="card-action" type="submit">{pinned ? "Unpin" : "Pin"}</button></form>{canSell ? <><form action={soldForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Mark sold</button></form><form action={deletePerfumeForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Delete</button></form></> : null}</div>;
 }

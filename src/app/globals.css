@@ -113,6 +113,8 @@ h3 {
   border-color: color-mix(in srgb, var(--sold) 22%, transparent);
   background: var(--sold-bg);
 }
+.badge-buy { color: var(--live); border-color: color-mix(in srgb, var(--live) 28%, transparent); background: var(--live-bg); }
+.badge-bid { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 42%, transparent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 
 .btn {
   display: inline-flex;
@@ -181,6 +183,20 @@ h3 {
   border-color: var(--line-strong);
   box-shadow: 0 12px 30px color-mix(in srgb, var(--ink) 7%, transparent);
 }
+
+.listing-card-buy { border-left: 3px solid color-mix(in srgb, var(--live) 65%, transparent); }
+.listing-card-bid { border-left: 3px solid color-mix(in srgb, var(--accent) 75%, transparent); }
+.listing-price, .listing-detail, .collection-count, .card-action {
+  display: inline-flex; align-items: center; border-radius: 999px; font-size: .7rem; line-height: 1; padding: .36rem .52rem;
+}
+.listing-price { font-weight: 650; }
+.listing-price-buy { background: var(--live-bg); color: var(--live); }
+.listing-price-bid { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.listing-detail, .collection-count { border: 1px solid var(--line); color: var(--muted); background: var(--bg); }
+.card-arrow { color: var(--accent); font-size: .9rem; transition: transform .15s ease; }
+.group:hover .card-arrow { transform: translate(2px, -2px); }
+.card-action { border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; }
+.card-action:hover { color: var(--ink); border-color: var(--line-strong); }
 
 .card-art {
   position: relative; display: grid; flex: 0 0 auto; place-items: center; width: 5rem; height: 5rem;

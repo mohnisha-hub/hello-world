@@ -18,7 +18,7 @@ export function CollectionCard({
   showStatus?: boolean;
 }) {
   return (
-    <Link href={href} className="card group flex gap-3 p-3">
+    <Link href={href} className="card group flex cursor-pointer gap-3 p-3">
       <div className={`card-art art-tone-${cardTone(collection.name)}`} aria-hidden="true">
         <span>{cardInitials(collection.name)}</span>
         {collection.photoUrl ? (
@@ -31,7 +31,7 @@ export function CollectionCard({
           <h3 className="line-clamp-2 text-xl leading-tight group-hover:text-accent">{collection.name}</h3>
           {showStatus ? <StatusBadge status={collection.status} /> : null}
         </div>
-        <p className="text-xs uppercase tracking-wider text-muted">{perfumeCount} perfume{perfumeCount === 1 ? "" : "s"}</p>
+        <div className="flex items-center justify-between gap-2"><span className="collection-count">{perfumeCount} perfume{perfumeCount === 1 ? "" : "s"}</span><span className="card-arrow" aria-hidden="true">↗</span></div>
       </div>
     </Link>
   );
@@ -67,7 +67,7 @@ export function PerfumeCard({
   const bid = isBidListing(perfume.saleType);
   const completion = perfumeCompletion(perfume);
   return (
-    <Link href={href} className="card group flex gap-3 p-3">
+    <Link href={href} className={`card group flex cursor-pointer gap-3 p-3 ${bid ? "listing-card-bid" : "listing-card-buy"}`}>
       <div className={`card-art art-tone-${cardTone(perfume.name)}`} aria-hidden="true">
         <span>{cardInitials(perfume.name)}</span>
         {perfume.imageUrl ? (
@@ -83,10 +83,13 @@ export function PerfumeCard({
             {showStatus ? <StatusBadge status={perfume.status} /> : null}
           </div>
         </div>
-        <p className="text-sm font-medium">
-          {bid ? `Min bid ${formatMoney(amount)}` : formatMoney(amount)}
-          {perfume.ml ? ` · ${perfume.ml} ml · ${formatPricePerMl(amount, perfume.ml)}` : ""}
-        </p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={bid ? "listing-price listing-price-bid" : "listing-price listing-price-buy"}>{bid ? `Min bid ${formatMoney(amount)}` : formatMoney(amount)}</span>
+          {perfume.ml ? <span className="listing-detail">{perfume.ml} ml</span> : null}
+          {perfume.ml ? <span className="listing-detail">{formatPricePerMl(amount, perfume.ml)}</span> : null}
+          {perfume.kind ? <span className="listing-detail">{perfume.kind}</span> : null}
+          {perfume.shippingIncluded ? <span className="listing-detail">Shipping incl.</span> : null}
+        </div>
         {username ? <p className="text-xs text-muted">Offered by @{username}</p> : null}
         {showStatus ? <p className="text-xs text-muted">Completion {completion.percent}%</p> : null}
       </div>
