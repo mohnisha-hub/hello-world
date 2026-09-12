@@ -31,6 +31,8 @@ export default async function MessagesPage() {
               {t.bid.kind === "buy" ? "Buy" : "Bid"} {formatMoney(t.bid.amountCents)} · @{t.bid.bidder.username} & @
               {t.bid.seller.username}
             </p>
+            {t.bid.kind === "bid" && t.bid.status === "open" ? <p className="text-sm text-accent">Waiting for seller acceptance before chat opens.</p> : null}
+            {t.bid.kind === "bid" && t.bid.status === "declined" ? <p className="text-sm text-muted">Bid declined · chat closed.</p> : null}
             <p>{t.messages[0]?.body}</p>
           </li>
         ))}

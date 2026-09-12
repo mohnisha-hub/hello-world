@@ -231,6 +231,12 @@ export async function sendMessageAction(formData: FormData) {
   if (convo.bid.bidderId !== user.id && convo.bid.sellerId !== user.id) {
     return { error: "Not your conversation." };
   }
+  if (convo.bid.kind === "bid" && convo.bid.status === "open") {
+    return { error: "This deal thread is waiting for the seller to accept the bid." };
+  }
+  if (convo.bid.kind === "bid" && convo.bid.status === "declined") {
+    return { error: "This bid was declined, so the deal chat is closed." };
+  }
   await prisma.message.create({ data: { conversationId, senderId: user.id, body } });
   revalidatePath(`/me/messages/${conversationId}`);
 }

@@ -26,6 +26,7 @@ export default async function ConversationPage({
   });
   if (!convo) notFound();
   if (convo.bid.bidderId !== session.user.id && convo.bid.sellerId !== session.user.id) notFound();
+  const chatEnabled = convo.bid.kind === "buy" || convo.bid.status === "accepted";
   return (
     <div className="space-y-4">
       <Link href="/me/messages">← All messages</Link>
@@ -43,13 +44,17 @@ export default async function ConversationPage({
           </li>
         ))}
       </ul>
-      <form action={messageForm} className="flex gap-2">
-        <input type="hidden" name="conversationId" value={id} />
-        <input name="body" className="flex-1" placeholder="Write a note" required />
-        <button className="btn" type="submit">
-          Send
-        </button>
-      </form>
+      {chatEnabled ? (
+        <form action={messageForm} className="flex gap-2">
+          <input type="hidden" name="conversationId" value={id} />
+          <input name="body" className="flex-1" placeholder="Write a note" required />
+          <button className="btn" type="submit">Send</button>
+        </form>
+      ) : (
+        <div className="rounded-2xl border border-line bg-paper p-4 text-sm text-muted">
+          {convo.bid.status === "declined" ? "This bid was declined. The deal chat is closed." : "This deal thread is ready. The seller must accept the bid before messages can be exchanged."}
+        </div>
+      )}
     </div>
   );
 }
