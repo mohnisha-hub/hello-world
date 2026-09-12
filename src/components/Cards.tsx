@@ -45,6 +45,7 @@ export function PerfumeCard({
 }: {
   perfume: {
     id: string;
+    brand?: string | null;
     name: string;
     priceCents: number;
     saleType?: string | null;
@@ -76,7 +77,7 @@ export function PerfumeCard({
       </div>
       <div className="min-w-0 flex-1 space-y-1.5 py-1">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="line-clamp-2 text-xl leading-tight group-hover:text-accent">{perfume.name}</h3>
+          <div className="min-w-0"><p className="eyebrow line-clamp-1">{perfume.brand || "Perfume"}</p><h3 className="line-clamp-2 text-xl leading-tight group-hover:text-accent">{perfume.name}</h3></div>
           <div className="flex items-center gap-1">
             <SaleBadge saleType={perfume.saleType} />
             {showStatus ? <StatusBadge status={perfume.status} /> : null}

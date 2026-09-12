@@ -103,6 +103,7 @@ export async function saveCollectionAction(formData: FormData) {
 export async function savePerfumeAction(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id") ?? "");
+  const brand = String(formData.get("brand") ?? "").trim() || null;
   const name = String(formData.get("name") ?? "").trim();
   const acceptBids = formData.get("acceptBids") === "on" || formData.get("acceptBids") === "true";
   const saleType = acceptBids ? "bid" : "buy";
@@ -166,6 +167,7 @@ export async function savePerfumeAction(formData: FormData) {
   if (uploaded) imageUrl = uploaded;
 
   const payload = {
+    brand,
     name,
     saleType,
     priceCents: saleType === "buy" ? priceCents! : minBidCents!,

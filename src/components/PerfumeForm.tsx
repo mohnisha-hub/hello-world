@@ -5,13 +5,14 @@ import { savePerfumeAction } from "@/actions/listings";
 import { perfumeCompletion, parseLinks } from "@/lib/completion";
 import { suggestedPerfumeArt } from "@/lib/photos";
 import { isBidListing } from "@/lib/sale";
-import { fragranceLabel, notesToText, searchFragranceCatalog, type FragranceEntry } from "@/lib/fragrance-catalog";
+import { notesToText, perfumesForBrand, popularBrands, searchFragranceCatalog, type FragranceEntry } from "@/lib/fragrance-catalog";
 import { StatusBadge } from "@/components/StatusBadge";
 
 type CollectionOption = { id: string; name: string };
 
 type Perfume = {
   id: string;
+  brand?: string | null;
   name: string;
   saleType?: string | null;
   priceCents: number;
@@ -41,6 +42,7 @@ export function PerfumeForm({
   defaultCollectionId?: string;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [brand, setBrand] = useState(perfume?.brand ?? "");
   const [name, setName] = useState(perfume?.name ?? "");
   const [acceptBids, setAcceptBids] = useState(isBidListing(perfume?.saleType));
   const [price, setPrice] = useState(
@@ -81,7 +83,12 @@ export function PerfumeForm({
       : useSuggested
         ? suggested
         : perfume?.imageUrl;
-  const matches = useMemo(() => searchFragranceCatalog(name), [name]);
+  const brandChoices = useMemo(() => popularBrands(), []);
+  const brandPerfumes = useMemo(() => perfumesForBrand(brand), [brand]);
+  const matches = useMemo(
+    () => brand ? brandPerfumes.filter((entry) => entry.name.toLowerCase().includes(name.toLowerCase())).slice(0, 8) : searchFragranceCatalog(name),
+    [brand, brandPerfumes, name],
+  );
 
   const completion = useMemo(
     () =>
@@ -101,7 +108,8 @@ export function PerfumeForm({
   );
 
   function applyCatalog(entry: FragranceEntry) {
-    setName(fragranceLabel(entry));
+    setBrand(entry.brand);
+    setName(entry.name);
     setTopNotes(notesToText(entry.top));
     setMiddleNotes(notesToText(entry.middle));
     setBaseNotes(notesToText(entry.base));
@@ -128,8 +136,8 @@ export function PerfumeForm({
         {perfume ? <StatusBadge status={perfume.status} /> : <StatusBadge status="draft" />}
       </div>
       <p className="text-muted">
-        Name and either a buy price or a minimum bid are required. Type a bottle name for catalog suggestions — choosing
-        one fills notes, a community score, and a photo when we have one.
+        Name and either a buy price or minimum bid are required. Choose a brand from the bundled catalogue to pre-fill
+        notes, community rating, and an available catalogue image.
       </p>
       <div className="card p-4">
         <p className="text-sm text-muted">Listing completion</p>
@@ -142,9 +150,38 @@ export function PerfumeForm({
         </p>
       </div>
       {error ? <p className="text-accent">{error}</p> : null}
+      <div className="space-y-3 rounded-2xl border border-line bg-paper p-4">
+        <label className="field">
+          Brand
+          <input
+            name="brand"
+            list="atelier-brand-options"
+            placeholder="Start with a brand"
+            value={brand}
+            onChange={(e) => {
+              setBrand(e.target.value);
+              setName("");
+              setCatalogImage("");
+            }}
+          />
+          <datalist id="atelier-brand-options">{brandChoices.map((choice) => <option key={choice} value={choice} />)}</datalist>
+        </label>
+        {brandPerfumes.length ? (
+          <div>
+            <p className="eyebrow mb-2">Popular {brand} perfumes</p>
+            <div className="flex flex-wrap gap-2">
+              {brandPerfumes.map((entry) => (
+                <button key={entry.name} className="rounded-full border border-line bg-bg px-3 py-1.5 text-sm hover:border-accent hover:text-accent" type="button" onClick={() => applyCatalog(entry)}>
+                  {entry.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
       <div className="relative">
         <label className="field">
-          Name
+          Perfume
           <input
             name="name"
             required
@@ -163,14 +200,14 @@ export function PerfumeForm({
         {openSuggest && matches.length > 0 ? (
           <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-2xl border border-line bg-bg p-1 shadow-lg">
             {matches.map((entry) => (
-              <li key={fragranceLabel(entry)}>
+              <li key={`${entry.brand}-${entry.name}`}>
                 <button
                   type="button"
                   className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-line/40"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => applyCatalog(entry)}
                 >
-                  {fragranceLabel(entry)}
+                  {brand ? entry.name : `${entry.brand} · ${entry.name}`}
                 </button>
               </li>
             ))}

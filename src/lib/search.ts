@@ -1,5 +1,6 @@
 export interface SearchablePerfume {
   id: string;
+  brand?: string | null;
   name: string;
   saleType?: string | null;
   minBidCents?: number | null;
@@ -124,14 +125,14 @@ export function searchPerfumesAndGroupUsers(
       continue;
     }
 
-    const nameWords = (p.name || "").replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean);
+    const nameWords = `${p.brand || ""} ${p.name || ""}`.replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean);
     const descWords = (p.description || "").replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean);
     const collectionWords = (p.collectionName || "").replace(/[^\w\s]/g, " ").split(/\s+/).filter(Boolean);
     const noteWords = `${p.topNotes || ""} ${p.middleNotes || ""} ${p.baseNotes || ""}`
       .replace(/[^\w\s]/g, " ")
       .split(/\s+/)
       .filter(Boolean);
-    const fullText = `${p.name} ${p.description || ""} ${p.collectionName || ""} ${p.topNotes || ""} ${p.middleNotes || ""} ${p.baseNotes || ""}`.toLowerCase();
+    const fullText = `${p.brand || ""} ${p.name} ${p.description || ""} ${p.collectionName || ""} ${p.topNotes || ""} ${p.middleNotes || ""} ${p.baseNotes || ""}`.toLowerCase();
 
     // Check full substring match as top boost
     let totalScore = 0;

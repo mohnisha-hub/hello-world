@@ -1,0 +1,1 @@
+ALTER TABLE "Perfume" ADD COLUMN "brand" TEXT;

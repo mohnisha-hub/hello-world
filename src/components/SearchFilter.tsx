@@ -219,7 +219,7 @@ export function SearchFilter({
                           className="flex items-center justify-between gap-3 rounded-xl bg-bg/50 p-2.5 border border-line/40 hover:border-line hover:bg-bg transition-colors"
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-ink">{perfume.name}</p>
+                            <p className="truncate text-sm font-medium text-ink">{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</p>
                             <p className="text-xs text-muted">
                               {isBidListing(perfume.saleType)
                                 ? `Min bid ${formatMoney(listingAmountCents(perfume))}`

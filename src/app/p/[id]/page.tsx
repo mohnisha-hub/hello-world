@@ -83,7 +83,7 @@ export default async function PerfumePage({
           </p>
         ) : null}
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-4xl">{perfume.name}</h1>
+          <div><p className="eyebrow">{perfume.brand || "Perfume"}</p><h1 className="text-4xl">{perfume.name}</h1></div>
           <SaleBadge saleType={perfume.saleType} />
           <StatusBadge status={perfume.status} />
         </div>

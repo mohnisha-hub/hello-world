@@ -188,6 +188,30 @@ export function fragranceLabel(entry: FragranceEntry) {
   return `${entry.brand} - ${entry.name}`;
 }
 
+// Curated once from the popular-brand and popular-perfume lists, then bundled
+// with the app. Listing creation never makes a live catalogue request.
+const POPULAR_BRAND_ORDER = [
+  "Lattafa", "Dior", "Yves Saint Laurent", "Guerlain", "Giorgio Armani", "Tom Ford", "Jean Paul Gaultier",
+  "Armaf", "Chanel", "Amouage", "Zara", "Xerjoff", "Parfums de Marly", "Maison Francis Kurkdjian",
+  "Louis Vuitton", "Creed", "Maison Margiela", "Byredo", "Le Labo", "Diptyque",
+];
+
+export function popularBrands() {
+  const available = new Set(FRAGRANCE_CATALOG.map((entry) => entry.brand));
+  const prioritized = POPULAR_BRAND_ORDER.filter((brand) => available.has(brand));
+  const remaining = Array.from(available).filter((brand) => !prioritized.includes(brand)).sort((a, b) => a.localeCompare(b));
+  return [...prioritized, ...remaining];
+}
+
+export function perfumesForBrand(brand: string, limit = 8) {
+  const target = normalize(brand);
+  if (!target) return [];
+  return FRAGRANCE_CATALOG
+    .filter((entry) => normalize(entry.brand) === target)
+    .sort((a, b) => b.rating - a.rating || a.name.localeCompare(b.name))
+    .slice(0, limit);
+}
+
 export function searchFragranceCatalog(query: string, limit = 8) {
   const q = normalize(query);
   if (q.length < 2) return [];

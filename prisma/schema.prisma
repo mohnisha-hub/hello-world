@@ -57,6 +57,7 @@ model Perfume {
   owner            User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   collectionId     String?
   collection       Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  brand            String?
   name             String
   saleType         String      @default("buy")
   priceCents       Int
