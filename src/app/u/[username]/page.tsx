@@ -94,7 +94,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         <div className="grid gap-4 border-t border-line px-6 py-4 text-center sm:grid-cols-3">
           <div><p className="font-serif text-2xl">{liveCollections.length}</p><p className="text-xs uppercase tracking-wider text-muted">Collections</p></div>
           <div><p className="font-serif text-2xl">{availableListings.length}</p><p className="text-xs uppercase tracking-wider text-muted">Available listings</p></div>
-          <div><p className="font-serif text-2xl">{publicWishlistCollections.length + publicWishlistPerfumes.length}</p><p className="text-xs uppercase tracking-wider text-muted">Saved finds</p></div>
+          <div><p className="font-serif text-2xl">{publicWishlistCollections.length + publicWishlistPerfumes.length}</p><p className="text-xs uppercase tracking-wider text-muted">Wishlist</p></div>
         </div>
         {user.bio ? <p className="border-t border-line px-6 py-4 text-sm leading-6">{user.bio}</p> : null}
       </section>
@@ -170,7 +170,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </div>
         </section>
       ) : null}
-      <FeedSections live={live} sold={sold} username={user.username} owner={isOwner} pinIds={pinIds} />
+      <FeedSections live={live} sold={isOwner ? sold : []} username={user.username} owner={isOwner} pinIds={pinIds} />
     </div>
   );
 }
