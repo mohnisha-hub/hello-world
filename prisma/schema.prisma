@@ -33,6 +33,7 @@ model User {
   sentMessages    Message[]
   ratingsGiven    Rating[]       @relation("Rater")
   ratingsReceived Rating[]       @relation("SellerRated")
+  notifications   Notification[] @relation("NotificationRecipient")
 }
 
 model Collection {
@@ -154,4 +155,17 @@ model Rating {
   createdAt     DateTime @default(now())
 
   @@unique([perfumeId, raterId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  recipientId String
+  recipient   User     @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  type        String
+  body        String
+  href        String
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([recipientId, createdAt])
 }

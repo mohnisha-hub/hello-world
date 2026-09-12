@@ -25,11 +25,7 @@ export function OnboardingForm({ email, photoUrl, returnTo }: { email?: string |
         Username
         <input name="username" required minLength={3} maxLength={24} pattern="[A-Za-z0-9_]+" autoComplete="username" />
       </label>
-      <label className="field">
-        Photo
-        <input name="photo" type="file" accept="image/*" />
-      </label>
-      {photoUrl ? <p className="text-sm text-muted">Your Google profile photo will be used unless you upload another one.</p> : null}
+      {photoUrl ? <p className="text-sm text-muted">Your Google profile photo will be used for your Atelier profile.</p> : null}
       <label className="field">
         Bio
         <textarea name="bio" rows={4} />
@@ -43,7 +39,6 @@ export function OnboardingForm({ email, photoUrl, returnTo }: { email?: string |
         <input name="email" type="email" defaultValue={email ?? ""} autoComplete="email" />
       </label>
       <div className="flex flex-wrap gap-3">
-        <button className="btn btn-ghost" type="submit" formAction={(fd) => submit("draft", fd)}>Save draft</button>
         <button className="btn" type="submit" formAction={(fd) => submit("publish", fd)}>Publish profile</button>
       </div>
     </form>

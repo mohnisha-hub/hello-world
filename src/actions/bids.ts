@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, syncCollectionStatus } from "@/lib/listings";
 import { rupeesToPaise, formatMoney } from "@/lib/money";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
+import { notify } from "@/lib/notifications";
 
 async function closeOtherBids(perfumeId: string, keepBidId?: string) {
   await prisma.bid.updateMany({
@@ -72,6 +73,7 @@ export async function placeBidAction(formData: FormData) {
     });
     return convo;
   });
+  await notify(perfume.ownerId, "bid", `New bid on ${perfume.name}: ${formatMoney(amountCents)}.`, `/p/${perfume.id}`);
   revalidateDeal((await prisma.user.findUnique({ where: { id: perfume.ownerId }, select: { username: true } }))?.username ?? "", perfumeId);
   redirect(`/me/messages/${conversation.id}`);
 }
@@ -127,6 +129,7 @@ export async function declineBidAction(formData: FormData) {
   });
   if (!bid) return { error: "Bid not found." };
   await prisma.bid.update({ where: { id }, data: { status: "declined" } });
+  await notify(bid.bidderId, "bid-declined", "Your bid was declined. You can continue exploring other listings.", `/p/${bid.perfumeId}`);
   revalidatePath("/me/bids");
   revalidatePath(`/p/${bid.perfumeId}`);
   return { ok: true };
@@ -159,6 +162,7 @@ export async function acceptBidAction(formData: FormData) {
     return convo;
   });
   await closeOtherBids(bid.perfumeId, bid.id);
+  await notify(bid.bidderId, "bid-accepted", `Your bid for ${bid.perfume.name} was accepted. Deal chat is now open.`, `/me/messages/${conversation.id}`);
   await syncCollectionStatus(bid.perfume.collectionId);
   revalidateDeal(bid.perfume.owner.username, bid.perfumeId);
   redirect(`/me/messages/${conversation.id}`);
@@ -243,5 +247,7 @@ export async function sendMessageAction(formData: FormData) {
     return { error: "This bid was declined, so the deal chat is closed." };
   }
   await prisma.message.create({ data: { conversationId, senderId: user.id, body } });
+  const recipientId = convo.bid.bidderId === user.id ? convo.bid.sellerId : convo.bid.bidderId;
+  await notify(recipientId, "message", "New message about a perfume deal.", `/me/messages/${conversationId}`);
   revalidatePath(`/me/messages/${conversationId}`);
 }

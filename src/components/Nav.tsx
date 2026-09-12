@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { logoutAction } from "@/actions/auth";
+import { NotificationBell } from "@/components/NotificationBell";
 
 export async function Nav() {
   let session = null;
@@ -25,6 +26,7 @@ export async function Nav() {
               <Link href="/me/activity">Activity</Link>
               <Link href="/me/messages">Messages</Link>
               <Link href="/me/profile">Profile</Link>
+              <NotificationBell />
               <form action={logoutAction}>
                 <button className="btn-ghost text-sm" type="submit">
                   Log out

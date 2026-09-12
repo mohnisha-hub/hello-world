@@ -7,7 +7,7 @@ export default async function LoginPage({
   searchParams: Promise<{ from?: string }>;
 }) {
   const { from } = await searchParams;
-  const next = from?.startsWith("/") && !from.startsWith("//") ? from : "/me/profile";
+  const next = from?.startsWith("/") && !from.startsWith("//") ? from : "/onboarding";
   return (
     <LoginForm
       from={next}

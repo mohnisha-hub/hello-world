@@ -44,10 +44,6 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           className="h-20 w-20 rounded-full border border-line object-cover bg-paper"
         />
         <div className="space-y-2 text-sm">
-          <label className="field">
-            Photo
-            <input name="photo" type="file" accept="image/*" />
-          </label>
           <label className="flex items-center gap-2">
             <input type="checkbox" name="useSuggested" defaultChecked={!profile.photoUrl} />
             Use suggested portrait
@@ -63,17 +59,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         Location
         <input name="location" defaultValue={profile.location ?? ""} />
       </label>
-      <label className="field">
-        Feed order
-        <select name="feedSort" defaultValue={profile.feedSort}>
-          <option value="publishedAtDesc">Newest published first</option>
-          <option value="publishedAtAsc">Oldest published first</option>
-        </select>
-      </label>
       <div className="flex flex-wrap gap-3">
-        <button className="btn btn-ghost" formAction={(fd) => run("save", fd)} type="submit">
-          Save draft
-        </button>
         <button className="btn" formAction={(fd) => run("publish", fd)} type="submit">
           Publish profile
         </button>

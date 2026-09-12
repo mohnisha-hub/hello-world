@@ -12,6 +12,6 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
   ]);
   if (!profile) redirect("/login?from=/onboarding");
   const from = params.from?.startsWith("/") && !params.from.startsWith("//") ? params.from : "/me/profile";
-  if (profile.usernameConfigured) redirect(from);
+  if (profile.usernameConfigured) redirect(from === "/onboarding" ? `/u/${profile.username}` : from);
   return <OnboardingForm email={profile.email} photoUrl={profile.photoUrl} returnTo={from} />;
 }
