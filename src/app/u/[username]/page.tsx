@@ -41,7 +41,13 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       include: { owner: true, perfumes: { where: { status: "published" } } },
     }),
   ]);
-  const openBidListings = user.perfumes.filter((perfume) => perfume.status === "published" && isBidListing(perfume.saleType));
+  const acceptedBidRows = await prisma.bid.findMany({
+    where: { sellerId: user.id, kind: "bid", status: "accepted" },
+    select: { perfumeId: true, id: true },
+  });
+  const acceptedBidByPerfume = new Map(acceptedBidRows.map((bid) => [bid.perfumeId, bid.id]));
+  const openBidListings = user.perfumes.filter((perfume) => perfume.status === "published" && isBidListing(perfume.saleType) && !acceptedBidByPerfume.has(perfume.id));
+  const acceptedBidListings = user.perfumes.filter((perfume) => perfume.status === "published" && acceptedBidByPerfume.has(perfume.id));
   const availablePerfumes = user.perfumes.filter((perfume) => perfume.status === "published" && !isBidListing(perfume.saleType));
   const soldPerfumes = user.perfumes.filter((perfume) => perfume.status === "sold");
   const bidHighs = openBidListings.length
@@ -81,8 +87,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </div>
           <div className="flex flex-wrap gap-2">
             {isOwner ? <Link className="btn btn-ghost" href="/me/profile">Edit profile</Link> : null}
-            {isOwner ? <Link className="btn" href="/me/collections/new">Add Collection</Link> : null}
-            {isOwner ? <Link className="btn btn-ghost" href="/me/collections">Edit Collection</Link> : null}
             {!isOwner ? <Link className="btn btn-ghost" href="/explore">Explore scents</Link> : null}
           </div>
         </div>
@@ -95,7 +99,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       </section>
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <main className="space-y-10">
-          <ProfileSection title="Collections" detail={`Curated by @${user.username}`}>
+          <ProfileSection title="Collections" detail={`Curated by @${user.username}`} tools={isOwner ? <SectionTools addHref="/me/collections/new" editHref="/me/collections" addLabel="Add collection" editLabel="Edit collections" /> : null}>
             {liveCollections.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {liveCollections.map((collection) => (
@@ -108,7 +112,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             ) : <EmptyState text="No published collections yet." />}
           </ProfileSection>
 
-          <ProfileSection title="Available perfumes" detail="Ready to buy">
+          <ProfileSection title="Available perfumes" detail="Ready to buy" tools={isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}>
             {availablePerfumes.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {availablePerfumes.map((perfume) => (
@@ -148,6 +152,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             ) : <EmptyState text="No active bid listings right now." />}
           </ProfileSection>
 
+          {isOwner && acceptedBidListings.length ? (
+            <ProfileSection title="Accepted deals" detail="Ready to close">
+              <div className="grid gap-3 sm:grid-cols-2">{acceptedBidListings.map((perfume) => <PerfumeCard key={perfume.id} perfume={perfume} href={`/p/${perfume.id}`} showStatus />)}</div>
+            </ProfileSection>
+          ) : null}
+
           {isOwner && soldPerfumes.length ? (
             <details className="rounded-xl border border-line bg-paper p-4">
               <summary className="cursor-pointer text-sm text-muted">Sold listings ({soldPerfumes.length})</summary>
@@ -172,8 +182,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   );
 }
 
-function ProfileSection({ title, detail, children }: { title: string; detail: string; children: React.ReactNode }) {
-  return <section><div className="mb-4 flex items-baseline justify-between gap-4"><h2 className="section-heading">{title}</h2><p className="text-right text-xs text-muted">{detail}</p></div>{children}</section>;
+function ProfileSection({ title, detail, tools, children }: { title: string; detail: string; tools?: React.ReactNode; children: React.ReactNode }) {
+  return <section><div className="mb-4 flex items-baseline justify-between gap-4"><h2 className="section-heading">{title}</h2><div className="flex items-center gap-2"><p className="text-right text-xs text-muted">{detail}</p>{tools}</div></div>{children}</section>;
+}
+
+function SectionTools({ addHref, editHref, addLabel, editLabel }: { addHref: string; editHref: string; addLabel: string; editLabel: string }) {
+  return <div className="flex gap-1"><Link className="section-tool" href={addHref} aria-label={addLabel} title={addLabel}>+</Link><Link className="section-tool" href={editHref} aria-label={editLabel} title={editLabel}>✎</Link></div>;
 }
 
 function EmptyState({ text }: { text: string }) {

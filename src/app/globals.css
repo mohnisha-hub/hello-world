@@ -197,6 +197,8 @@ h3 {
 .group:hover .card-arrow { transform: translate(2px, -2px); }
 .card-action { border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; }
 .card-action:hover { color: var(--ink); border-color: var(--line-strong); }
+.section-tool { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; border: 1px solid var(--line); border-radius: .5rem; color: var(--muted); font-size: 1rem; line-height: 1; }
+.section-tool:hover { color: var(--ink); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 
 .card-art {
   position: relative; display: grid; flex: 0 0 auto; place-items: center; width: 5rem; height: 5rem;

@@ -44,6 +44,8 @@ export async function placeBidAction(formData: FormData) {
   if (!perfume || perfume.status !== "published") return { error: "This listing is not open." };
   if (perfume.ownerId === user.id) return { error: "You cannot bid on your own perfume." };
   if (!isBidListing(perfume.saleType)) return { error: "This perfume is buy-only." };
+  const acceptedBid = await prisma.bid.findFirst({ where: { perfumeId, kind: "bid", status: "accepted" }, select: { id: true } });
+  if (acceptedBid) return { error: "The seller has accepted an offer and is completing this deal." };
   const minimum = listingAmountCents(perfume);
   const highestOpenBid = await prisma.bid.findFirst({
     where: { perfumeId, kind: "bid", status: "open" },
@@ -155,15 +157,10 @@ export async function acceptBidAction(formData: FormData) {
         body: `Bid accepted for ${bid.perfume.name} at ${formatMoney(bid.amountCents)} (minimum ${formatMoney(listingAmountCents(bid.perfume))}). Perfume: /p/${bid.perfume.id}`,
       },
     });
-    await tx.perfume.update({
-      where: { id: bid.perfumeId },
-      data: { status: "sold", soldAt: new Date() },
-    });
     return convo;
   });
   await closeOtherBids(bid.perfumeId, bid.id);
   await notify(bid.bidderId, "bid-accepted", `Your bid for ${bid.perfume.name} was accepted. Deal chat is now open.`, `/me/messages/${conversation.id}`);
-  await syncCollectionStatus(bid.perfume.collectionId);
   revalidateDeal(bid.perfume.owner.username, bid.perfumeId);
   redirect(`/me/messages/${conversation.id}`);
 }
@@ -172,7 +169,7 @@ export async function archiveBidSoldAction(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id"));
   const bid = await prisma.bid.findFirst({
-    where: { id, OR: [{ sellerId: user.id }, { bidderId: user.id }] },
+    where: { id, sellerId: user.id },
   });
   if (!bid) return { error: "Bid not found." };
   await prisma.bid.update({ where: { id }, data: { status: "archived" } });
@@ -184,6 +181,7 @@ export async function archiveBidSoldAction(formData: FormData) {
   revalidatePath("/me/bids");
   revalidatePath("/me/buys");
   revalidatePath(`/p/${bid.perfumeId}`);
+  revalidatePath(`/u/${user.username}`);
 }
 
 export async function ratePurchaseAction(formData: FormData) {

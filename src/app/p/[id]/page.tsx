@@ -12,6 +12,7 @@ import { Notice } from "@/components/Notice";
 import { GuestAuthCta } from "@/components/GuestAuthCta";
 import {
   acceptBidForm,
+  archiveBidForm,
   bidForm,
   buyForm,
   declineBidForm,
@@ -60,6 +61,7 @@ export default async function PerfumePage({
     : [];
   const openBids = bids.filter((b) => b.status === "open");
   const highest = openBids[0] ?? null;
+  const acceptedBid = bids.find((b) => b.status === "accepted") ?? null;
 
   return (
     <article className="grid gap-8 md:grid-cols-2">
@@ -201,6 +203,12 @@ export default async function PerfumePage({
                       </form>
                     </div>
                   ) : null}
+                  {b.status === "accepted" && perfume.status === "published" ? (
+                    <form action={archiveBidForm}>
+                      <input type="hidden" name="id" value={b.id} />
+                      <button className="btn" type="submit">Close deal & mark sold</button>
+                    </form>
+                  ) : null}
                   {b.conversation ? <Link href={`/me/messages/${b.conversation.id}`}>Open chat</Link> : null}
                 </li>
               ))}
@@ -215,7 +223,7 @@ export default async function PerfumePage({
             <Link className="btn btn-ghost" href={`/me/perfumes/${id}/edit`}>
               Edit
             </Link>
-            {perfume.status === "published" ? (
+            {perfume.status === "published" && !acceptedBid ? (
               <form action={soldForm}>
                 <input type="hidden" name="id" value={id} />
                 <button className="btn" type="submit">
