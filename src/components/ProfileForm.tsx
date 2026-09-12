@@ -17,14 +17,12 @@ type Profile = {
 
 export function ProfileForm({ profile }: { profile: Profile }) {
   const [error, setError] = useState<string | null>(null);
-  const [publishedMessage, setPublishedMessage] = useState<string | null>(null);
   const suggested = suggestedAvatar(profile.username);
 
   async function run(intent: string, fd: FormData) {
     fd.set("intent", intent);
     const res = await saveProfileAction(fd);
     if (res.error) setError(res.error);
-    else if (res.published) setPublishedMessage(`Your profile is live and viewable by other Atelier members at /u/${profile.username}.`);
   }
 
   return (
@@ -35,7 +33,6 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       </div>
       <p className="text-muted">Your collector storefront: show the person behind the bottles, then let listings and deal chat do the work.</p>
       {error ? <p className="text-accent">{error}</p> : null}
-      {publishedMessage ? <p className="rounded-xl border border-line bg-paper p-3 text-sm">✓ {publishedMessage}</p> : null}
       <div className="flex items-center gap-4 rounded-2xl border border-line bg-paper p-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -67,12 +64,6 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       <div className="flex flex-wrap gap-2 pt-2">
         <Link className="btn btn-ghost" href={`/u/${profile.username}`}>
           View public profile
-        </Link>
-        <Link className="btn btn-ghost" href="/me/collections/new">
-          Add collection
-        </Link>
-        <Link className="btn btn-ghost" href="/me/perfumes/new">
-          Add perfume
         </Link>
       </div>
     </form>

@@ -92,6 +92,7 @@ export async function saveProfileAction(formData: FormData) {
   revalidatePath("/me/profile");
   revalidatePath("/");
   revalidatePath(`/u/${user.username}`);
+  if (publish) redirect(`/u/${user.username}`);
   return { ok: true, published: publish };
 }
 
