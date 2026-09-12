@@ -13,6 +13,20 @@ function hasSessionCookie(request: NextRequest) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Vercel gives every production deployment a temporary hostname. OAuth
+  // providers cannot safely whitelist an unbounded set of those addresses,
+  // so start every production session on the one stable public hostname.
+  const canonicalHost = "hello-world-mohnisha-s-team.vercel.app";
+  if (
+    process.env.VERCEL_ENV === "production" &&
+    request.nextUrl.hostname.endsWith(".vercel.app") &&
+    request.nextUrl.hostname !== canonicalHost
+  ) {
+    const canonical = request.nextUrl.clone();
+    canonical.protocol = "https:";
+    canonical.host = canonicalHost;
+    return NextResponse.redirect(canonical);
+  }
   const publicPath =
     pathname === "/" ||
     pathname.startsWith("/login") ||
