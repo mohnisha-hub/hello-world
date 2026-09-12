@@ -19,12 +19,14 @@ type Profile = {
 
 export function ProfileForm({ profile }: { profile: Profile }) {
   const [error, setError] = useState<string | null>(null);
+  const [publishedMessage, setPublishedMessage] = useState<string | null>(null);
   const suggested = suggestedAvatar(profile.username);
 
   async function run(intent: string, fd: FormData) {
     fd.set("intent", intent);
     const res = await saveProfileAction(fd);
     if (res.error) setError(res.error);
+    else if (res.published) setPublishedMessage(`Your profile is live and viewable by other Atelier members at /u/${profile.username}.`);
   }
 
   return (
@@ -38,6 +40,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         profile is live.
       </p>
       {error ? <p className="text-accent">{error}</p> : null}
+      {publishedMessage ? <p className="rounded-xl border border-line bg-paper p-3 text-sm">✓ {publishedMessage}</p> : null}
       <div className="flex items-center gap-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

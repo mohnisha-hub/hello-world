@@ -227,6 +227,8 @@ function navigateTo(viewName, params = {}) {
     // classic navigation language, but never strand a member in the legacy
     // read-only preview for a workflow that can change data.
     const liveRoutes = {
+        explore: '/explore',
+        notes: '/explore',
         wishlist: '/me/wishlist',
         create: '/me/create',
         activity: '/me/activity',

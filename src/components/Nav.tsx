@@ -18,6 +18,7 @@ export async function Nav() {
         </Link>
         <nav className="flex flex-wrap items-center justify-end gap-4 text-sm">
           <Link href="/">Home</Link>
+          <Link href="/explore">Explore</Link>
           {session?.user ? (
             <>
               <Link href="/me">My feed</Link>

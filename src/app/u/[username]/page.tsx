@@ -16,6 +16,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     where: { username },
     include: {
       pins: true,
+      wishlist: true,
       collections: { include: { perfumes: true } },
       perfumes: true,
     },
@@ -40,6 +41,18 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     ? await prisma.wishlistItem.findMany({ where: { userId: session.user.id } })
     : [];
   const wishSet = new Set(wishlisted.map((w) => `${w.targetType}:${w.targetId}`));
+  const wishlistPerfumeIds = user.wishlist.filter((item) => item.targetType === "perfume").map((item) => item.targetId);
+  const wishlistCollectionIds = user.wishlist.filter((item) => item.targetType === "collection").map((item) => item.targetId);
+  const [publicWishlistPerfumes, publicWishlistCollections] = await Promise.all([
+    prisma.perfume.findMany({
+      where: { id: { in: wishlistPerfumeIds }, status: "published", owner: { profileStatus: "published" } },
+      include: { owner: true },
+    }),
+    prisma.collection.findMany({
+      where: { id: { in: wishlistCollectionIds }, status: "published", owner: { profileStatus: "published" } },
+      include: { owner: true, perfumes: { where: { status: "published" } } },
+    }),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -90,6 +103,20 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             ))}
             {pinnedPerfumes.map((p) => (
               <PerfumeCard key={p.id} perfume={p} href={`/p/${p.id}`} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {publicWishlistCollections.length + publicWishlistPerfumes.length > 0 ? (
+        <section>
+          <h2 className="mb-1 text-2xl">{isOwner ? "My wishlist" : `@${user.username}'s wishlist`}</h2>
+          <p className="mb-3 text-sm text-muted">Saved public finds from the Atelier community.</p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {publicWishlistCollections.map((collection) => (
+              <CollectionCard key={collection.id} collection={collection} perfumeCount={collection.perfumes.length} href={`/u/${collection.owner.username}/c/${collection.id}`} />
+            ))}
+            {publicWishlistPerfumes.map((perfume) => (
+              <PerfumeCard key={perfume.id} perfume={perfume} href={`/p/${perfume.id}`} username={perfume.owner.username} />
             ))}
           </div>
         </section>
