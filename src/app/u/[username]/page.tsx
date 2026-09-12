@@ -35,9 +35,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   );
   const pinIds = new Set(user.pins.map((p) => p.targetId));
   const rating = await sellerRating(user.id);
-  const feedCollections = liveCollections.filter((c) => !pinIds.has(c.id));
-  const feedStandalone = standalone.filter((p) => !pinIds.has(p.id));
-  const { live, sold } = buildFeed(feedCollections, feedStandalone, dir);
+  // The public profile is also the owner's storefront manager. Keep pinned
+  // items in this feed so pinning never makes a listing disappear.
+  const { live, sold } = buildFeed(liveCollections, standalone, dir);
   const wishlistPerfumeIds = user.wishlist.filter((item) => item.targetType === "perfume").map((item) => item.targetId);
   const wishlistCollectionIds = user.wishlist.filter((item) => item.targetType === "collection").map((item) => item.targetId);
   const [publicWishlistPerfumes, publicWishlistCollections] = await Promise.all([

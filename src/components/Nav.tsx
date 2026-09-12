@@ -21,17 +21,17 @@ export async function Nav() {
           <Link className="nav-link" href="/explore">Explore</Link>
           {session?.user ? (
             <>
+              <Link className="nav-link" href={`/u/${session.user.username}`}>My profile</Link>
               <Link className="nav-link" href="/me/messages">Messages</Link>
               <details className="nav-menu">
                 <summary>My Atelier</summary>
                 <div className="nav-menu-panel">
-                  <Link href="/me">My storefront</Link>
                   <Link href="/me/create">Create</Link>
+                  <Link href="/me/drafts">Drafts</Link>
                   <Link href="/me/activity">Activity</Link>
                   <Link href="/me/bids">Bids</Link>
                   <Link href="/me/buys">Buys</Link>
                   <Link href="/me/wishlist">Wishlist</Link>
-                  <Link href="/me/profile">Edit profile</Link>
                 </div>
               </details>
               <NotificationBell />
