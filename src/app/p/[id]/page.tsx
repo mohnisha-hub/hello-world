@@ -205,8 +205,8 @@ export default async function PerfumePage({
                 </li>
               ))}
             </ul>
-            <Link className="text-sm" href="/me/bids">
-              All bids →
+            <Link className="text-sm" href={`/me/bids?tab=received&perfume=${id}`}>
+              All bids for this perfume →
             </Link>
           </section>
         ) : null}
