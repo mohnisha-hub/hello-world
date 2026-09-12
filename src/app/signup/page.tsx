@@ -1,6 +1,9 @@
 import { SignupForm } from "@/components/SignupForm";
 import { DATABASE_UNAVAILABLE, isDatabaseConfigured } from "@/lib/db";
 
+// See the login page: database configuration must be evaluated per request.
+export const dynamic = "force-dynamic";
+
 export default async function SignupPage({
   searchParams,
 }: {
