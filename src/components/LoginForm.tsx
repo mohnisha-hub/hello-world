@@ -30,7 +30,7 @@ export function LoginForm({ from, setupError, googleEnabled }: { from: string; s
         Continue
       </button>
       {googleEnabled ? (
-        <button className="btn btn-ghost" formAction={googleLoginAction} type="submit">
+        <button className="btn btn-ghost" formAction={googleLoginAction} formNoValidate type="submit">
           Continue with Google
         </button>
       ) : null}
