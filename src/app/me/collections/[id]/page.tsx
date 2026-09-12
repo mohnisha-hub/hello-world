@@ -23,7 +23,7 @@ export default async function EditCollectionPage({ params }: { params: Promise<{
       />
       <div className="flex gap-3">
         <Link className="btn" href={`/me/perfumes/new?collectionId=${collection.id}`}>
-          Add perfume to this collection
+          + Perfume
         </Link>
         <form action={deleteCollectionForm}>
           <input type="hidden" name="id" value={collection.id} />

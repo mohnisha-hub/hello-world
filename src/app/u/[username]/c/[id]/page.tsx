@@ -65,6 +65,16 @@ export default async function CollectionDetailPage({
               </button>
             </form>
           ) : null}
+          {isOwner ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link className="btn" href={`/me/perfumes/new?collectionId=${collection.id}`}>
+                + Perfume
+              </Link>
+              <Link className="btn btn-ghost" href={`/me/collections/${collection.id}`}>
+                Manage collection
+              </Link>
+            </div>
+          ) : null}
           {!session?.user && !isOwner ? (
             <div className="mt-3">
               <GuestAuthCta from={`/u/${username}/c/${id}`} action="wishlist this collection" />

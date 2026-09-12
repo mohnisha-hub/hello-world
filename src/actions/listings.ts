@@ -16,6 +16,36 @@ function revalidateOwner(username: string, extra?: string[]) {
   extra?.forEach((p) => revalidatePath(p));
 }
 
+async function moveToUncategorizedCollection(ownerId: string, sourceCollectionId: string) {
+  const perfumes = await prisma.perfume.findMany({
+    where: { collectionId: sourceCollectionId },
+    select: { status: true },
+  });
+  if (!perfumes.length) return null;
+
+  let target = await prisma.collection.findFirst({
+    where: { ownerId, name: "Uncategorized", NOT: { id: sourceCollectionId }, status: { not: "deleted" } },
+  });
+  if (!target) {
+    target = await prisma.collection.create({
+      data: { ownerId, name: "Uncategorized", photoUrl: suggestedCollectionArt("Uncategorized") },
+    });
+  }
+  await prisma.perfume.updateMany({
+    where: { collectionId: sourceCollectionId },
+    data: { collectionId: target.id },
+  });
+  if (perfumes.some((perfume) => perfume.status === "published")) {
+    target = await prisma.collection.update({
+      where: { id: target.id },
+      data: { status: "published", publishedAt: target.publishedAt ?? new Date() },
+    });
+  } else if (perfumes.length && perfumes.every((perfume) => perfume.status === "sold")) {
+    target = await prisma.collection.update({ where: { id: target.id }, data: { status: "sold" } });
+  }
+  return target;
+}
+
 export async function saveCollectionAction(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id") ?? "");
@@ -56,10 +86,14 @@ export async function saveCollectionAction(formData: FormData) {
       data: { status: "published", publishedAt: collection.publishedAt ?? new Date() },
     });
   } else if (intent === "unpublish") {
+    const destination = await moveToUncategorizedCollection(user.id, collection.id);
     await prisma.collection.update({
       where: { id: collection.id },
       data: { status: "draft" },
     });
+    await prisma.pin.deleteMany({ where: { userId: user.id, targetType: "collection", targetId: collection.id } });
+    revalidateOwner(user.username, [`/u/${user.username}/c/${collection.id}`, ...(destination ? [`/u/${user.username}/c/${destination.id}`] : [])]);
+    if (destination) redirect(`/me/collections/${destination.id}`);
   }
 
   revalidateOwner(user.username, [`/u/${user.username}/c/${collection.id}`]);
@@ -213,11 +247,13 @@ export async function restoreItemAction(formData: FormData) {
 export async function deleteCollectionAction(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id"));
-  await prisma.collection.updateMany({
-    where: { id, ownerId: user.id },
-    data: { status: "deleted" },
-  });
-  revalidateOwner(user.username);
+  const collection = await prisma.collection.findFirst({ where: { id, ownerId: user.id } });
+  if (!collection) return { error: "Collection not found." };
+  const destination = await moveToUncategorizedCollection(user.id, collection.id);
+  await prisma.collection.update({ where: { id }, data: { status: "deleted" } });
+  await prisma.pin.deleteMany({ where: { userId: user.id, targetType: "collection", targetId: id } });
+  revalidateOwner(user.username, [`/u/${user.username}/c/${id}`, ...(destination ? [`/u/${user.username}/c/${destination.id}`] : [])]);
+  redirect(`/u/${user.username}`);
 }
 
 export async function markPerfumeSoldAction(formData: FormData) {

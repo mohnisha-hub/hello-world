@@ -58,6 +58,7 @@ export function CollectionForm({
           {publishedPerfumeCount < 1 ? " — publish one before the collection can go live." : "."}
         </p>
       ) : null}
+      {collection ? <p className="text-xs text-muted">Unpublishing or deleting this collection keeps its perfumes safe by moving them to your Uncategorized collection.</p> : null}
       <div className="flex flex-wrap gap-3">
         <button className="btn btn-ghost" formAction={(fd) => run("save", fd)} type="submit">
           Save draft
