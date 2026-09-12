@@ -26,7 +26,9 @@ export default async function ConversationPage({
   });
   if (!convo) notFound();
   if (convo.bid.bidderId !== session.user.id && convo.bid.sellerId !== session.user.id) notFound();
-  const chatEnabled = convo.bid.kind === "buy" || convo.bid.status === "accepted";
+  // Closing a completed deal marks the bid as archived, but the buyer and
+  // seller should still be able to coordinate delivery asynchronously.
+  const chatEnabled = convo.bid.kind === "buy" || ["accepted", "archived"].includes(convo.bid.status);
   return (
     <div className="space-y-4">
       <Link href="/me/messages">← All messages</Link>

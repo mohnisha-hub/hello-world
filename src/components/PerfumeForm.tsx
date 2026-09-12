@@ -66,9 +66,10 @@ export function PerfumeForm({
   const [catalogRating, setCatalogRating] = useState(
     perfume?.catalogRating != null ? String(perfume.catalogRating) : "",
   );
-  const [catalogImage, setCatalogImage] = useState("");
   const [openSuggest, setOpenSuggest] = useState(false);
-  const [useSuggested, setUseSuggested] = useState(!perfume?.imageUrl);
+  const [coverSource, setCoverSource] = useState<"atelier" | "upload">(
+    perfume?.imageUrl && !perfume.imageUrl.startsWith("/atelier/") ? "upload" : "atelier",
+  );
   const [hasUpload, setHasUpload] = useState(false);
   const initialLinks = parseLinks(perfume?.links);
   const [links, setLinks] = useState(
@@ -76,13 +77,7 @@ export function PerfumeForm({
   );
 
   const suggested = suggestedPerfumeArt(name || "perfume");
-  const previewImage = hasUpload
-    ? perfume?.imageUrl
-    : catalogImage && !useSuggested
-      ? catalogImage
-      : useSuggested
-        ? suggested
-        : perfume?.imageUrl;
+  const previewImage = coverSource === "atelier" ? suggested : perfume?.imageUrl;
   const brandChoices = useMemo(() => popularBrands(), []);
   const brandPerfumes = useMemo(() => perfumesForBrand(brand), [brand]);
   const matches = useMemo(
@@ -93,7 +88,7 @@ export function PerfumeForm({
   const completion = useMemo(
     () =>
       perfumeCompletion({
-        imageUrl: hasUpload || catalogImage || perfume?.imageUrl ? previewImage || perfume?.imageUrl || catalogImage : null,
+        imageUrl: coverSource === "atelier" || hasUpload || perfume?.imageUrl ? previewImage || perfume?.imageUrl : null,
         kind: kind || null,
         fill: fill || null,
         ml: ml ? Number(ml) : null,
@@ -104,7 +99,7 @@ export function PerfumeForm({
         baseNotes,
         links,
       }),
-    [previewImage, perfume?.imageUrl, hasUpload, catalogImage, kind, fill, ml, shippingIncluded, description, topNotes, middleNotes, baseNotes, links],
+    [previewImage, perfume?.imageUrl, coverSource, hasUpload, kind, fill, ml, shippingIncluded, description, topNotes, middleNotes, baseNotes, links],
   );
 
   function applyCatalog(entry: FragranceEntry) {
@@ -114,10 +109,6 @@ export function PerfumeForm({
     setMiddleNotes(notesToText(entry.middle));
     setBaseNotes(notesToText(entry.base));
     setCatalogRating(String(entry.rating));
-    if (entry.imageUrl) {
-      setCatalogImage(entry.imageUrl);
-      setUseSuggested(false);
-    }
     setOpenSuggest(false);
   }
 
@@ -161,7 +152,6 @@ export function PerfumeForm({
             onChange={(e) => {
               setBrand(e.target.value);
               setName("");
-              setCatalogImage("");
             }}
           />
           <datalist id="atelier-brand-options">{brandChoices.map((choice) => <option key={choice} value={choice} />)}</datalist>
@@ -214,7 +204,6 @@ export function PerfumeForm({
           </ul>
         ) : null}
       </div>
-      {catalogImage ? <input type="hidden" name="catalogImage" value={catalogImage} /> : null}
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
@@ -281,12 +270,23 @@ export function PerfumeForm({
           </label>
           <label className="flex items-center gap-2">
             <input
-              type="checkbox"
-              name="useSuggested"
-              checked={useSuggested && !hasUpload}
-              onChange={(e) => setUseSuggested(e.target.checked)}
+              type="radio"
+              name="coverSource"
+              value="atelier"
+              checked={coverSource === "atelier"}
+              onChange={() => setCoverSource("atelier")}
             />
             Use Atelier cover art
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="coverSource"
+              value="upload"
+              checked={coverSource === "upload"}
+              onChange={() => setCoverSource("upload")}
+            />
+            Use my uploaded image
           </label>
         </div>
       </div>

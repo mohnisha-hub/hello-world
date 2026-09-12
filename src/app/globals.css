@@ -207,8 +207,8 @@ h3 {
 }
 .card-art::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(145deg, rgba(255,255,255,.16), transparent 54%); }
 .card-art span { font-family: var(--font-fraunces), serif; font-size: 1.45rem; letter-spacing: -.08em; }
-.card-art img { position: absolute; inset: .4rem; z-index: 1; height: calc(100% - .8rem); width: calc(100% - .8rem); border-radius: .55rem; object-fit: cover; box-shadow: 0 6px 12px rgba(0,0,0,.15); transition: transform .3s ease; }
-.group:hover .card-art img { transform: scale(1.04); }
+.card-art img { position: absolute; inset: .4rem; z-index: 1; height: calc(100% - .8rem); width: calc(100% - .8rem); border-radius: .55rem; object-fit: contain; background: color-mix(in srgb, var(--paper) 84%, transparent); box-shadow: 0 6px 12px rgba(0,0,0,.15); transition: transform .3s ease; }
+.group:hover .card-art img { transform: scale(1.02); }
 .art-tone-0 { background: linear-gradient(145deg, #5c2b25, #ca765a); }
 .art-tone-1 { background: linear-gradient(145deg, #263d38, #6a8973); }
 .art-tone-2 { background: linear-gradient(145deg, #45344e, #9b7590); }

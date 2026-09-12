@@ -14,6 +14,9 @@ export function CollectionForm({
 }) {
   const [name, setName] = useState(collection?.name ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [coverSource, setCoverSource] = useState<"atelier" | "upload">(
+    collection?.photoUrl && !collection.photoUrl.startsWith("/atelier/") ? "upload" : "atelier",
+  );
   const suggested = suggestedCollectionArt(name || "Collection");
 
   async function run(intent: string, fd: FormData) {
@@ -40,15 +43,19 @@ export function CollectionForm({
       </label>
       <div className="flex items-center gap-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={collection?.photoUrl || suggested} alt="" className="h-24 w-24 rounded-2xl border border-line object-cover" />
+        <img src={coverSource === "atelier" ? suggested : collection?.photoUrl || suggested} alt="" className="h-24 w-24 rounded-2xl border border-line object-contain" />
         <div className="space-y-2 text-sm">
           <label className="field">
             Cover image <span className="text-xs text-muted">(JPEG, PNG, or WebP · max 3 MB)</span>
             <input name="photo" type="file" accept="image/jpeg,image/png,image/webp" />
           </label>
           <label className="flex items-center gap-2">
-            <input type="checkbox" name="useSuggested" defaultChecked={!collection?.photoUrl} />
+            <input type="radio" name="coverSource" value="atelier" checked={coverSource === "atelier"} onChange={() => setCoverSource("atelier")} />
             Use Atelier cover art
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="radio" name="coverSource" value="upload" checked={coverSource === "upload"} onChange={() => setCoverSource("upload")} />
+            Use my uploaded image
           </label>
         </div>
       </div>

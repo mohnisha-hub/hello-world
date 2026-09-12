@@ -52,7 +52,7 @@ export async function saveCollectionAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "A collection needs a name." };
   const intent = String(formData.get("intent") ?? "save");
-  const useSuggested = formData.get("useSuggested") === "on";
+  const useAtelierArt = formData.get("coverSource") !== "upload";
   const file = formData.get("photo") as File | null;
   const upload = await trySaveUpload(file, `col-${user.id}`);
   if (upload.error) return { error: upload.error };
@@ -62,8 +62,7 @@ export async function saveCollectionAction(formData: FormData) {
     ? await prisma.collection.findFirst({ where: { id, ownerId: user.id } })
     : null;
 
-  let photoUrl = existing?.photoUrl ?? null;
-  if (useSuggested) photoUrl = suggestedCollectionArt(name);
+  let photoUrl = useAtelierArt ? suggestedCollectionArt(name) : existing?.photoUrl ?? null;
   if (uploaded) photoUrl = uploaded;
 
   const data = { name, photoUrl, ownerId: user.id };
@@ -145,7 +144,7 @@ export async function savePerfumeAction(formData: FormData) {
   const links = linkUrls
     .map((url, i) => ({ label: linkLabels[i] || "Link", url: url.trim() }))
     .filter((l) => l.url);
-  const useSuggested = formData.get("useSuggested") === "on";
+  const useAtelierArt = formData.get("coverSource") !== "upload";
   const file = formData.get("photo") as File | null;
   const upload = await trySaveUpload(file, `p-${user.id}`);
   if (upload.error) return { error: upload.error };
@@ -160,10 +159,7 @@ export async function savePerfumeAction(formData: FormData) {
       return { error: "This listing has open bids. Accept or decline them before switching to buy-only." };
     }
   }
-  let imageUrl = existing?.imageUrl ?? null;
-  const catalogImage = String(formData.get("catalogImage") ?? "").trim();
-  if (useSuggested) imageUrl = suggestedPerfumeArt(name);
-  else if (catalogImage.startsWith("https://")) imageUrl = catalogImage;
+  let imageUrl = useAtelierArt ? suggestedPerfumeArt(name) : existing?.imageUrl ?? null;
   if (uploaded) imageUrl = uploaded;
 
   const payload = {
