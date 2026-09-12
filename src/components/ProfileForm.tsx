@@ -8,8 +8,6 @@ import { StatusBadge } from "@/components/StatusBadge";
 
 type Profile = {
   username: string;
-  email: string | null;
-  workNumber: string | null;
   bio: string | null;
   location: string | null;
   photoUrl: string | null;
@@ -35,10 +33,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         <h1 className="text-4xl">Profile</h1>
         <StatusBadge status={profile.profileStatus} />
       </div>
-      <p className="text-muted">
-        Save as draft until you are ready. Other people only see you, your collections, and your perfumes when this
-        profile is live.
-      </p>
+      <p className="text-muted">Your collector storefront: show the person behind the bottles, then let listings and deal chat do the work.</p>
       {error ? <p className="text-accent">{error}</p> : null}
       {publishedMessage ? <p className="rounded-xl border border-line bg-paper p-3 text-sm">✓ {publishedMessage}</p> : null}
       <div className="flex items-center gap-4">
@@ -69,14 +64,6 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         <input name="location" defaultValue={profile.location ?? ""} />
       </label>
       <label className="field">
-        Email
-        <input name="email" type="email" defaultValue={profile.email ?? ""} />
-      </label>
-      <label className="field">
-        Work number
-        <input name="workNumber" defaultValue={profile.workNumber ?? ""} />
-      </label>
-      <label className="field">
         Feed order
         <select name="feedSort" defaultValue={profile.feedSort}>
           <option value="publishedAtDesc">Newest published first</option>
@@ -97,6 +84,9 @@ export function ProfileForm({ profile }: { profile: Profile }) {
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2 pt-2">
+        <Link className="btn btn-ghost" href={`/u/${profile.username}`}>
+          View public profile
+        </Link>
         <Link className="btn btn-ghost" href="/me/collections/new">
           Add collection
         </Link>

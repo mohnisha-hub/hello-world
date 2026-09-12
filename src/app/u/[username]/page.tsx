@@ -58,32 +58,46 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     }),
   ]);
   const openBidListings = standalone.filter((perfume) => perfume.status === "published" && isBidListing(perfume.saleType));
+  const availableListings = user.perfumes.filter((perfume) => perfume.status === "published");
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4">
+      <section className="overflow-hidden rounded-3xl border border-line bg-paper">
+        <div className="h-24 bg-gradient-to-r from-accent/40 via-paper to-line" />
+        <div className="flex flex-wrap items-end justify-between gap-5 px-6 pb-6">
+          <div className="-mt-10 flex items-end gap-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={user.photoUrl || `https://api.dicebear.com/9.x/lorelei/svg?seed=${user.username}`}
           alt=""
-          className="h-20 w-20 rounded-full object-cover"
+          className="h-24 w-24 rounded-full border-4 border-paper object-cover"
         />
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-4xl">@{user.username}</h1>
             {isOwner ? <StatusBadge status={user.profileStatus} /> : null}
           </div>
-          {user.bio ? <p className="max-w-xl">{user.bio}</p> : null}
-          <p className="text-sm text-muted">
-            {user.location || "Somewhere scented"}
-          </p>
+          <p className="mt-1 text-sm text-muted">{user.location || "Somewhere scented"} · Collector storefront</p>
           {rating ? (
-            <p>
+            <p className="text-sm">
               {rating.average.toFixed(1)} / 10 · {rating.count} rating{rating.count === 1 ? "" : "s"}
             </p>
           ) : null}
         </div>
-      </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {isOwner ? <Link className="btn btn-ghost" href="/me/profile">Edit profile</Link> : null}
+            {isOwner ? <Link className="btn" href="/me/create">Add to collection</Link> : null}
+            {!isOwner ? <Link className="btn btn-ghost" href="/explore">Explore scents</Link> : null}
+          </div>
+        </div>
+        <div className="grid gap-4 border-t border-line px-6 py-4 text-center sm:grid-cols-3">
+          <div><p className="font-serif text-2xl">{liveCollections.length}</p><p className="text-xs uppercase tracking-wider text-muted">Collections</p></div>
+          <div><p className="font-serif text-2xl">{availableListings.length}</p><p className="text-xs uppercase tracking-wider text-muted">Available listings</p></div>
+          <div><p className="font-serif text-2xl">{publicWishlistCollections.length + publicWishlistPerfumes.length}</p><p className="text-xs uppercase tracking-wider text-muted">Saved finds</p></div>
+        </div>
+        {user.bio ? <p className="border-t border-line px-6 py-4 text-sm leading-6">{user.bio}</p> : null}
+      </section>
       {pinnedCollections.length + pinnedPerfumes.length > 0 ? (
         <section>
           <h2 className="mb-3 text-2xl">Pinned</h2>
@@ -109,6 +123,14 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             {pinnedPerfumes.map((p) => (
               <PerfumeCard key={p.id} perfume={p} href={`/p/${p.id}`} />
             ))}
+          </div>
+        </section>
+      ) : null}
+      {liveCollections.length > 0 ? (
+        <section>
+          <div className="mb-3 flex items-baseline justify-between"><h2 className="text-2xl">Collection cabinets</h2><p className="text-sm text-muted">Curated sets from @{user.username}</p></div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {liveCollections.map((collection) => <CollectionCard key={collection.id} collection={collection} perfumeCount={collection.perfumes.filter((perfume) => perfume.status === "published").length} href={`/u/${user.username}/c/${collection.id}`} />)}
           </div>
         </section>
       ) : null}

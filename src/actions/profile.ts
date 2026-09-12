@@ -68,8 +68,10 @@ export async function saveProfileAction(formData: FormData) {
   if (useSuggested) photoUrl = suggestedAvatar(user.username);
   if (uploaded) photoUrl = uploaded;
 
-  const email = String(formData.get("email") ?? "").trim() || null;
-  const workNumber = String(formData.get("workNumber") ?? "").trim() || null;
+  // Contact takes place in deal chat. Retain legacy private fields without
+  // surfacing them in the collector profile experience.
+  const email = current.email;
+  const workNumber = current.workNumber;
   const bio = String(formData.get("bio") ?? "").trim() || null;
   const location = String(formData.get("location") ?? "").trim() || null;
   const feedSort = String(formData.get("feedSort") ?? current.feedSort);
