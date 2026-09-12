@@ -48,16 +48,16 @@ export function SearchFilter({
   const isSearching = query.trim().length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Search Input Bar */}
-      <div className="space-y-3">
+      <div className="rounded-2xl border border-line bg-paper p-3 shadow-[var(--card-shadow)] space-y-3">
         <div className="relative">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search perfumes by name, brand, or notes (e.g. Baccarat, Tobacco, Oud, Santal, Vanilla)..."
-            className="w-full rounded-2xl border border-line bg-paper px-4 py-3.5 pl-11 text-base text-ink placeholder:text-muted/60 focus:border-accent focus:outline-none transition-colors"
+            placeholder="Search perfume, house, or note"
+            className="w-full rounded-xl border border-transparent bg-bg/50 px-4 py-3 pl-10 text-base text-ink placeholder:text-muted/60 focus:border-accent focus:outline-none transition-colors"
           />
           <svg
             className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted"
@@ -92,7 +92,7 @@ export function SearchFilter({
 
         {/* Quick note filter tags */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-xs text-muted">Quick filters:</span>
+          <span className="eyebrow mr-1">Browse notes</span>
           {POPULAR_NOTES.map((note) => {
             const active = query.toLowerCase() === note.toLowerCase();
             return (
@@ -102,7 +102,7 @@ export function SearchFilter({
                 className={`rounded-full px-2.5 py-1 text-xs transition-colors border ${
                   active
                     ? "bg-accent text-on-accent border-accent font-medium"
-                    : "bg-paper text-muted border-line hover:border-muted hover:text-ink"
+                    : "bg-bg/50 text-muted border-transparent hover:border-line hover:text-ink"
                 }`}
               >
                 {note}
@@ -114,7 +114,7 @@ export function SearchFilter({
 
       {/* Results View */}
       {isSearching ? (
-        <div className="space-y-6">
+        <div className="space-y-6 pt-1">
           <div className="flex items-center justify-between border-b border-line pb-3">
             <h2 className="text-xl">
               Sellers with listings for <span className="text-accent">&ldquo;{query}&rdquo;</span>
@@ -251,8 +251,8 @@ export function SearchFilter({
         </div>
       ) : (
         /* Default Community Members Grid when not searching */
-        <details className="rounded-2xl border border-line bg-paper p-4">
-          <summary className="cursor-pointer text-sm text-muted">Browse collectors ({allUsers.length})</summary>
+        <details className="rounded-xl border border-line bg-paper px-4 py-3">
+          <summary className="cursor-pointer text-sm text-muted">Browse collectors <span className="ml-1 text-ink">({allUsers.length})</span></summary>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {allUsers.length === 0 ? (
             <p className="text-muted">No published profiles yet. Publish a profile to appear here.</p>

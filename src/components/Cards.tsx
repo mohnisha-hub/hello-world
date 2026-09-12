@@ -18,17 +18,15 @@ export function CollectionCard({
   showStatus?: boolean;
 }) {
   return (
-    <Link href={href} className="card block">
+    <Link href={href} className="card group block">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={collectionDisplayImage(collection.name, collection.photoUrl)} alt="" className="h-40 w-full object-cover" />
-      <div className="space-y-1 p-4">
+      <img src={collectionDisplayImage(collection.name, collection.photoUrl)} alt="" className="h-36 w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]" />
+      <div className="space-y-1.5 p-4">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-xl">{collection.name}</h3>
+          <h3 className="text-xl group-hover:text-accent">{collection.name}</h3>
           {showStatus ? <StatusBadge status={collection.status} /> : null}
         </div>
-        <p className="text-sm text-muted">
-          {perfumeCount} perfume{perfumeCount === 1 ? "" : "s"}
-        </p>
+        <p className="text-xs uppercase tracking-wider text-muted">{perfumeCount} perfume{perfumeCount === 1 ? "" : "s"}</p>
       </div>
     </Link>
   );
@@ -63,28 +61,28 @@ export function PerfumeCard({
   const bid = isBidListing(perfume.saleType);
   const completion = perfumeCompletion(perfume);
   return (
-    <Link href={href} className="card block">
-      <div className="h-40 bg-line/40">
+    <Link href={href} className="card group block">
+      <div className="h-44 overflow-hidden bg-line/40">
         {perfume.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={perfume.imageUrl} alt="" className="h-40 w-full object-cover" />
+          <img src={perfume.imageUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035]" />
         ) : (
           <div className="flex h-full items-center justify-center font-serif text-2xl">{perfume.name}</div>
         )}
       </div>
-      <div className="space-y-1 p-4">
+      <div className="space-y-2 p-4">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-xl">{perfume.name}</h3>
+          <h3 className="text-xl leading-tight group-hover:text-accent">{perfume.name}</h3>
           <div className="flex items-center gap-1">
             <SaleBadge saleType={perfume.saleType} />
             {showStatus ? <StatusBadge status={perfume.status} /> : null}
           </div>
         </div>
-        <p>
+        <p className="text-sm font-medium">
           {bid ? `Min bid ${formatMoney(amount)}` : formatMoney(amount)}
           {perfume.ml ? ` · ${perfume.ml} ml · ${formatPricePerMl(amount, perfume.ml)}` : ""}
         </p>
-        {username ? <p className="text-sm text-muted">@{username}</p> : null}
+        {username ? <p className="text-xs text-muted">Offered by @{username}</p> : null}
         {showStatus ? <p className="text-xs text-muted">Completion {completion.percent}%</p> : null}
       </div>
     </Link>

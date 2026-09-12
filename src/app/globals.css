@@ -58,7 +58,9 @@ html {
 }
 
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 8% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 28rem),
+    var(--bg);
   color: var(--ink);
   font-family: var(--font-outfit), sans-serif;
   accent-color: var(--accent);
@@ -71,6 +73,18 @@ h3 {
   font-family: var(--font-fraunces), serif;
   letter-spacing: -0.03em;
 }
+
+::selection { background: color-mix(in srgb, var(--accent) 38%, transparent); }
+
+.brand-mark {
+  color: var(--ink);
+  font-family: var(--font-fraunces), serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.075em;
+  line-height: 1;
+}
+.brand-mark span { color: var(--accent); }
 
 .badge {
   display: inline-flex;
@@ -106,19 +120,22 @@ h3 {
   justify-content: center;
   gap: 0.4rem;
   border-radius: 999px;
-  padding: 0.55rem 1rem;
+  padding: 0.6rem 1rem;
   font-size: 0.9rem;
   font-weight: 500;
   border: 1px solid var(--ink);
   background: var(--ink);
   color: var(--bg);
   cursor: pointer;
-  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
 .btn:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
 }
+
+.btn-compact { padding: 0.45rem 0.75rem; font-size: 0.8rem; }
 
 .btn-ghost {
   background: transparent;
@@ -154,7 +171,7 @@ h3 {
 .card {
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   overflow: hidden;
   box-shadow: var(--card-shadow);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
@@ -162,7 +179,30 @@ h3 {
 
 .card:hover {
   border-color: var(--line-strong);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--ink) 7%, transparent);
 }
+
+.section-heading { font-size: clamp(1.45rem, 2vw, 1.9rem); }
+.eyebrow { font-size: .68rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+
+.nav-link {
+  border-radius: 999px;
+  color: var(--muted);
+  padding: .45rem .6rem;
+  transition: color .15s ease, background-color .15s ease;
+}
+.nav-link:hover { color: var(--ink); background: color-mix(in srgb, var(--paper) 84%, transparent); }
+.nav-menu { position: relative; }
+.nav-menu summary { cursor: pointer; list-style: none; border-radius: 999px; color: var(--muted); padding: .45rem .6rem; }
+.nav-menu summary::-webkit-details-marker { display: none; }
+.nav-menu summary::after { content: "⌄"; margin-left: .35rem; font-size: .7rem; }
+.nav-menu[open] summary { background: var(--paper); color: var(--ink); }
+.nav-menu-panel {
+  position: absolute; right: 0; top: calc(100% + .55rem); z-index: 30; min-width: 10.75rem;
+  border: 1px solid var(--line); border-radius: .9rem; background: var(--paper); box-shadow: 0 14px 40px color-mix(in srgb, var(--ink) 13%, transparent); padding: .35rem;
+}
+.nav-menu-panel a { display: block; border-radius: .6rem; padding: .52rem .65rem; color: var(--muted); }
+.nav-menu-panel a:hover { background: var(--bg); color: var(--ink); }
 
 .site-header {
   border-bottom: 1px solid var(--line);
@@ -201,7 +241,7 @@ h3 {
     padding-bottom: 0.75rem;
   }
   .site-header nav {
-    max-width: calc(100vw - 7.5rem);
+    max-width: calc(100vw - 6.75rem);
     flex-wrap: nowrap;
     gap: 0.85rem;
     overflow-x: auto;
@@ -215,6 +255,11 @@ h3 {
   .theme-toggle {
     padding: 0.4rem;
   }
+  .nav-link { padding-inline: .4rem; }
+  .nav-link[href="/me/messages"] { font-size: 0; }
+  .nav-link[href="/me/messages"]::after { content: "✦"; font-size: .9rem; }
+  .btn-compact { font-size: 0; padding: .43rem .55rem; }
+  .btn-compact::after { content: "+"; font-size: 1rem; }
 }
 
 .flying-cow-layer {

@@ -13,30 +13,38 @@ export async function Nav() {
   }
   return (
     <header className="site-header sticky top-0 z-20">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
-        <Link href="/" className="font-serif text-2xl">
-          Atelier
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+        <Link href="/explore" className="brand-mark" aria-label="Atelier home">
+          Atelier<span aria-hidden="true">.</span>
         </Link>
-        <nav className="flex flex-wrap items-center justify-end gap-4 text-sm">
-          <Link href="/explore">Explore</Link>
+        <nav className="flex items-center justify-end gap-1.5 text-sm" aria-label="Primary navigation">
+          <Link className="nav-link" href="/explore">Explore</Link>
           {session?.user ? (
             <>
-              <Link href="/me">My feed</Link>
-              <Link href="/me/create">Create</Link>
-              <Link href="/me/activity">Activity</Link>
-              <Link href="/me/messages">Messages</Link>
-              <Link href="/me/profile">Profile</Link>
+              <Link className="nav-link" href="/me/messages">Messages</Link>
+              <details className="nav-menu">
+                <summary>My Atelier</summary>
+                <div className="nav-menu-panel">
+                  <Link href="/me">My storefront</Link>
+                  <Link href="/me/create">Create</Link>
+                  <Link href="/me/activity">Activity</Link>
+                  <Link href="/me/bids">Bids</Link>
+                  <Link href="/me/buys">Buys</Link>
+                  <Link href="/me/wishlist">Wishlist</Link>
+                  <Link href="/me/profile">Edit profile</Link>
+                </div>
+              </details>
               <NotificationBell />
               <form action={logoutAction}>
-                <button className="btn-ghost text-sm" type="submit">
-                  Log out
+                <button className="nav-link" type="submit">
+                  Sign out
                 </button>
               </form>
             </>
           ) : (
             <>
-              <Link href="/login">Log in</Link>
-              <Link href="/signup">Sign up</Link>
+              <Link className="nav-link" href="/login">Log in</Link>
+              <Link className="btn btn-compact" href="/signup">Join Atelier</Link>
             </>
           )}
           <ThemeToggle />

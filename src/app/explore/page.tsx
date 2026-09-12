@@ -22,26 +22,26 @@ export default async function ExplorePage() {
   const ratingMap = Object.fromEntries(ratingRows);
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="space-y-10">
+      <div className="flex flex-wrap items-end justify-between gap-5 border-b border-line pb-7">
         <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-muted">Atelier marketplace</p>
-          <h1 className="mt-2 text-4xl">Explore the vault</h1>
-          <p className="mt-2 text-muted">Live collections and listings from published Atelier members.</p>
+          <p className="eyebrow">Atelier marketplace</p>
+          <h1 className="mt-2 text-5xl sm:text-6xl">Find your next scent.</h1>
+          <p className="mt-3 max-w-xl text-muted">A considered marketplace for bottles, decants, collections, and the people who keep them.</p>
         </div>
-        <Link className="btn" href="/me/create">Create a listing</Link>
+        <Link className="btn" href="/me/create">List something</Link>
       </div>
       <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={users} ratingMap={ratingMap} />
       {collections.length ? (
         <section>
-          <h2 className="mb-3 text-2xl">Live collections</h2>
+          <div className="mb-4 flex items-baseline justify-between"><h2 className="section-heading">Collections</h2><span className="text-xs text-muted">Freshly published</span></div>
           <div className="grid gap-4 sm:grid-cols-2">
             {collections.map((collection) => <CollectionCard key={collection.id} collection={collection} perfumeCount={collection.perfumes.length} href={`/u/${collection.owner.username}/c/${collection.id}`} />)}
           </div>
         </section>
       ) : null}
       <section>
-        <h2 className="mb-3 text-2xl">Latest listings</h2>
+        <div className="mb-4 flex items-baseline justify-between"><h2 className="section-heading">Latest listings</h2><span className="text-xs text-muted">Available now</span></div>
         {perfumes.length === 0 ? <p className="text-muted">No published listings yet.</p> : null}
         <div className="grid gap-4 sm:grid-cols-2">
           {perfumes.map((perfume) => <PerfumeCard key={perfume.id} perfume={perfume} href={`/p/${perfume.id}`} username={perfume.owner.username} />)}
