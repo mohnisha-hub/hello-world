@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isPublicProfile } from "@/lib/visibility";
@@ -8,6 +9,9 @@ import { CollectionCard, PerfumeCard } from "@/components/Cards";
 import { sellerRating } from "@/lib/listings";
 import { StatusBadge } from "@/components/StatusBadge";
 import { wishlistForm } from "@/actions/form-wrappers";
+import { bidForm } from "@/actions/form-wrappers";
+import { isBidListing, listingAmountCents } from "@/lib/sale";
+import { formatMoney } from "@/lib/money";
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
@@ -53,6 +57,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       include: { owner: true, perfumes: { where: { status: "published" } } },
     }),
   ]);
+  const openBidListings = standalone.filter((perfume) => perfume.status === "published" && isBidListing(perfume.saleType));
 
   return (
     <div className="space-y-8">
@@ -104,6 +109,28 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             {pinnedPerfumes.map((p) => (
               <PerfumeCard key={p.id} perfume={p} href={`/p/${p.id}`} />
             ))}
+          </div>
+        </section>
+      ) : null}
+      {!isOwner && session?.user && openBidListings.length > 0 ? (
+        <section>
+          <h2 className="mb-1 text-2xl">Open bids</h2>
+          <p className="mb-3 text-sm text-muted">Place an offer directly, or open a listing to review its details first.</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {openBidListings.map((perfume) => {
+              const minimum = listingAmountCents(perfume);
+              return (
+                <div key={perfume.id} className="card space-y-3 p-4">
+                  <Link href={`/p/${perfume.id}`} className="font-serif text-xl">{perfume.name}</Link>
+                  <p className="text-sm text-muted">Minimum bid {formatMoney(minimum)}</p>
+                  <form action={bidForm} className="flex flex-wrap gap-2">
+                    <input type="hidden" name="perfumeId" value={perfume.id} />
+                    <input name="amount" type="number" min={minimum / 100 + 0.01} step="0.01" placeholder="Your INR bid" required />
+                    <button className="btn" type="submit">Place bid</button>
+                  </form>
+                </div>
+              );
+            })}
           </div>
         </section>
       ) : null}

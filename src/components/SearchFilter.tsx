@@ -206,6 +206,11 @@ export function SearchFilter({
                     <p className="text-xs uppercase tracking-wider text-muted font-medium">
                       Matching Public Listings ({matchingPerfumes.length}):
                     </p>
+                    {matchingPerfumes.filter((perfume) => isBidListing(perfume.saleType)).length > 0 ? (
+                      <p className="text-xs font-medium text-accent">
+                        {matchingPerfumes.filter((perfume) => isBidListing(perfume.saleType)).length} accepting bid{matchingPerfumes.filter((perfume) => isBidListing(perfume.saleType)).length === 1 ? "" : "s"}
+                      </p>
+                    ) : null}
                     <div className="space-y-2">
                       {matchingPerfumes.map((perfume) => (
                         <Link
