@@ -3,7 +3,7 @@ export function configuredDatabaseUrl() {
   // runtime. Indexed lookup keeps Next's action compiler from snapshotting a
   // missing build-time value into the server-action bundle.
   const environment = process.env as Record<string, string | undefined>;
-  const url = ["DATABASE_URL", "POSTGRES_PRISMA_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING"]
+  const url = ["ATELIER_DATABASE_URL", "DATABASE_URL", "POSTGRES_PRISMA_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING"]
     .map((key) => environment[key])
     .find(Boolean);
   if (!url || url.startsWith("file:")) return null;
