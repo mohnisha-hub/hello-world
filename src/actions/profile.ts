@@ -45,6 +45,7 @@ export async function completeOnboardingAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/me");
   revalidatePath("/me/profile");
+  if (intent === "publish") redirect(`/u/${username}`);
   const returnTo = String(formData.get("returnTo") ?? "/me/profile");
   redirect(returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/me/profile");
 }

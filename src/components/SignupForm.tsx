@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { signupAction } from "@/actions/auth";
+import { googleLoginAction, signupAction } from "@/actions/auth";
 
-export function SignupForm({ from, setupError }: { from: string; setupError?: string | null }) {
+export function SignupForm({ from, setupError, googleEnabled }: { from: string; setupError?: string | null; googleEnabled: boolean }) {
   const [error, setError] = useState<string | null>(setupError ?? null);
   return (
     <form
@@ -14,8 +14,8 @@ export function SignupForm({ from, setupError }: { from: string; setupError?: st
         if (res?.error) setError(res.error);
       }}
     >
-      <h1 className="text-4xl">Sign up</h1>
-      <p className="text-muted">Choose a unique username. Your profile stays draft until you publish it.</p>
+      <h1 className="text-4xl">Join Atelier</h1>
+      <p className="text-muted">Use Google for the fastest start, then choose your permanent collector username.</p>
       {error ? <p className="text-accent">{error}</p> : null}
       <input type="hidden" name="from" value={from} />
       <label className="field">
@@ -29,6 +29,11 @@ export function SignupForm({ from, setupError }: { from: string; setupError?: st
       <button className="btn" type="submit">
         Create account
       </button>
+      {googleEnabled ? (
+        <button className="btn btn-ghost" formAction={googleLoginAction} formNoValidate type="submit">
+          Continue with Google
+        </button>
+      ) : null}
       <p className="text-sm text-muted">
         Already have an account? <Link href={`/login?from=${encodeURIComponent(from)}`}>Log in</Link>
       </p>

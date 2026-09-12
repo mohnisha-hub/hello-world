@@ -8,5 +8,11 @@ export default async function SignupPage({
 }) {
   const { from } = await searchParams;
   const next = from?.startsWith("/") && !from.startsWith("//") ? from : "/me/profile";
-  return <SignupForm from={next} setupError={isDatabaseConfigured() ? null : DATABASE_UNAVAILABLE} />;
+  return (
+    <SignupForm
+      from={next}
+      setupError={isDatabaseConfigured() ? null : DATABASE_UNAVAILABLE}
+      googleEnabled={Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)}
+    />
+  );
 }
