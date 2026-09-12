@@ -251,7 +251,9 @@ export function SearchFilter({
         </div>
       ) : (
         /* Default Community Members Grid when not searching */
-        <div className="grid gap-4 sm:grid-cols-2">
+        <details className="rounded-2xl border border-line bg-paper p-4">
+          <summary className="cursor-pointer text-sm text-muted">Browse collectors ({allUsers.length})</summary>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {allUsers.length === 0 ? (
             <p className="text-muted">No published profiles yet. Publish a profile to appear here.</p>
           ) : (
@@ -283,7 +285,8 @@ export function SearchFilter({
               );
             })
           )}
-        </div>
+          </div>
+        </details>
       )}
     </div>
   );

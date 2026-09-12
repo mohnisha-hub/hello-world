@@ -36,19 +36,14 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       <p className="text-muted">Your collector storefront: show the person behind the bottles, then let listings and deal chat do the work.</p>
       {error ? <p className="text-accent">{error}</p> : null}
       {publishedMessage ? <p className="rounded-xl border border-line bg-paper p-3 text-sm">✓ {publishedMessage}</p> : null}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 rounded-2xl border border-line bg-paper p-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={profile.photoUrl || suggested}
           alt=""
           className="h-20 w-20 rounded-full border border-line object-cover bg-paper"
         />
-        <div className="space-y-2 text-sm">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="useSuggested" defaultChecked={!profile.photoUrl} />
-            Use suggested portrait
-          </label>
-        </div>
+        <p className="text-sm text-muted">Your account image is managed through Google sign-in.</p>
       </div>
       <p className="text-sm text-muted">Username: @{profile.username} (unique, locked)</p>
       <label className="field">
