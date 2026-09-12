@@ -234,11 +234,11 @@ export function PerfumeForm({
         />
         <div className="space-y-2 text-sm">
           <label className="field">
-            Photo
+            Cover image <span className="text-xs text-muted">(JPEG, PNG, or WebP · max 3 MB)</span>
             <input
               name="photo"
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               onChange={(e) => setHasUpload(Boolean(e.target.files?.[0]))}
             />
           </label>
@@ -249,7 +249,7 @@ export function PerfumeForm({
               checked={useSuggested && !hasUpload}
               onChange={(e) => setUseSuggested(e.target.checked)}
             />
-            Use a generated image from the name
+            Use Atelier cover art
           </label>
         </div>
       </div>

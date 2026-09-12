@@ -182,6 +182,22 @@ h3 {
   box-shadow: 0 12px 30px color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
+.card-art {
+  position: relative; display: grid; flex: 0 0 auto; place-items: center; width: 5rem; height: 5rem;
+  overflow: hidden; border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); border-radius: .8rem;
+  color: color-mix(in srgb, var(--ink) 92%, white); isolation: isolate;
+}
+.card-art::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(145deg, rgba(255,255,255,.16), transparent 54%); }
+.card-art span { font-family: var(--font-fraunces), serif; font-size: 1.45rem; letter-spacing: -.08em; }
+.card-art img { position: absolute; inset: .4rem; z-index: 1; height: calc(100% - .8rem); width: calc(100% - .8rem); border-radius: .55rem; object-fit: cover; box-shadow: 0 6px 12px rgba(0,0,0,.15); transition: transform .3s ease; }
+.group:hover .card-art img { transform: scale(1.04); }
+.art-tone-0 { background: linear-gradient(145deg, #5c2b25, #ca765a); }
+.art-tone-1 { background: linear-gradient(145deg, #263d38, #6a8973); }
+.art-tone-2 { background: linear-gradient(145deg, #45344e, #9b7590); }
+.art-tone-3 { background: linear-gradient(145deg, #624833, #c49a5c); }
+.art-tone-4 { background: linear-gradient(145deg, #344158, #8298ad); }
+html[data-theme="light"] .card-art { color: #fffaf2; }
+
 .section-heading { font-size: clamp(1.45rem, 2vw, 1.9rem); }
 .eyebrow { font-size: .68rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
 
@@ -260,6 +276,7 @@ h3 {
   .nav-link[href="/me/messages"]::after { content: "✦"; font-size: .9rem; }
   .btn-compact { font-size: 0; padding: .43rem .55rem; }
   .btn-compact::after { content: "+"; font-size: 1rem; }
+  .card-art { width: 4.5rem; height: 4.5rem; }
 }
 
 .flying-cow-layer {

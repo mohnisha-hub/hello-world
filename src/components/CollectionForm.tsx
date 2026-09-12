@@ -43,12 +43,12 @@ export function CollectionForm({
         <img src={collection?.photoUrl || suggested} alt="" className="h-24 w-24 rounded-2xl border border-line object-cover" />
         <div className="space-y-2 text-sm">
           <label className="field">
-            Photo
-            <input name="photo" type="file" accept="image/*" />
+            Cover image <span className="text-xs text-muted">(JPEG, PNG, or WebP · max 3 MB)</span>
+            <input name="photo" type="file" accept="image/jpeg,image/png,image/webp" />
           </label>
           <label className="flex items-center gap-2">
             <input type="checkbox" name="useSuggested" defaultChecked={!collection?.photoUrl} />
-            Use this suggested image
+            Use Atelier cover art
           </label>
         </div>
       </div>

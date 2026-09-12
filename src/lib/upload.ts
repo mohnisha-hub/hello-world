@@ -1,16 +1,16 @@
 import { put } from "@vercel/blob";
 
-const MAX_BYTES = 4 * 1024 * 1024;
-const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const MAX_BYTES = 3 * 1024 * 1024;
+const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export async function saveUpload(file: File | null, prefix: string) {
   if (!file || file.size === 0) return null;
   if (file.size > MAX_BYTES) {
-    throw new Error("Photos must be 4MB or smaller.");
+    throw new Error("Photos must be 3MB or smaller.");
   }
   const type = file.type || "application/octet-stream";
   if (!ALLOWED.has(type)) {
-    throw new Error("Upload a JPEG, PNG, WebP, or GIF photo.");
+    throw new Error("Upload a JPEG, PNG, or WebP photo.");
   }
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) {
