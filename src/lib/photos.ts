@@ -4,12 +4,12 @@ export function suggestedAvatar(seed: string) {
 
 export function suggestedCollectionArt(name: string) {
   void name;
-  return "/atelier/atelier-card-cover.png";
+  return "/atelier/atelier-collection-cover.png";
 }
 
 export function suggestedPerfumeArt(name: string) {
   void name;
-  return "/atelier/atelier-card-cover.png";
+  return "/atelier/atelier-perfume-cover.png";
 }
 
 export function collectionDisplayImage(name: string, photoUrl?: string | null) {
