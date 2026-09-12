@@ -8,8 +8,12 @@ import { ActingUserSwitcher } from "@/components/ActingUserSwitcher";
 export default async function MeLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login?from=/me");
-  const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { id: true, username: true } });
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, username: true, usernameConfigured: true },
+  });
   if (!user) redirect("/login?from=/me");
+  if (!user.usernameConfigured) redirect("/onboarding?from=/me");
   const acting = await getActingUser();
   const isAdmin = isAdminUsername(session.user.username || user.username);
   const users = isAdmin ? await listEditableUsers() : [];

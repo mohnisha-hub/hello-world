@@ -36,6 +36,7 @@ async function ensureGoogleUser(googleId: string, name: string | null | undefine
           passwordHash: null,
           photoUrl: image ?? null,
           profileStatus: "draft",
+          usernameConfigured: false,
         },
       });
     } catch (error) {

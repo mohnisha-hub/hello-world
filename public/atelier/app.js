@@ -223,6 +223,20 @@ async function resetDemoData() {
 // NAVIGATION & ROUTING
 // ==========================================
 function navigateTo(viewName, params = {}) {
+    // These views now have production, database-backed pages. Keep the
+    // classic navigation language, but never strand a member in the legacy
+    // read-only preview for a workflow that can change data.
+    const liveRoutes = {
+        wishlist: '/me/wishlist',
+        create: '/me/create',
+        activity: '/me/activity',
+        chats: '/me/messages',
+        profile: '/me/profile'
+    };
+    if (liveRoutes[viewName]) {
+        window.top.location.href = liveRoutes[viewName];
+        return;
+    }
     STATE.activeView = viewName;
 
     // Update navigation tabs

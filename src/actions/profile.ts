@@ -1,10 +1,53 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/listings";
+import { getSessionUser } from "@/lib/acting";
 import { trySaveUpload } from "@/lib/upload";
 import { suggestedAvatar } from "@/lib/photos";
+
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
+
+export async function completeOnboardingAction(formData: FormData) {
+  const sessionUser = await getSessionUser();
+  if (!sessionUser?.id) redirect("/login?from=/onboarding");
+
+  const username = String(formData.get("username") ?? "").trim();
+  if (!USERNAME_RE.test(username)) return { error: "Username must be 3–24 letters, numbers, or underscores." };
+
+  const current = await prisma.user.findUnique({ where: { id: sessionUser.id } });
+  if (!current) redirect("/login?from=/onboarding");
+  const taken = await prisma.user.findFirst({ where: { username, NOT: { id: current.id } }, select: { id: true } });
+  if (taken) return { error: "That username is already taken." };
+
+  const intent = String(formData.get("intent") ?? "draft");
+  const bio = String(formData.get("bio") ?? "").trim() || null;
+  const location = String(formData.get("location") ?? "").trim() || null;
+  const email = String(formData.get("email") ?? "").trim() || current.email || null;
+  const file = formData.get("photo") as File | null;
+  const upload = await trySaveUpload(file, `user-${current.id}`);
+  if (upload.error) return { error: upload.error };
+
+  await prisma.user.update({
+    where: { id: current.id },
+    data: {
+      username,
+      bio,
+      location,
+      email,
+      photoUrl: upload.url ?? current.photoUrl ?? suggestedAvatar(username),
+      profileStatus: intent === "publish" ? "published" : "draft",
+      usernameConfigured: true,
+    },
+  });
+  revalidatePath("/");
+  revalidatePath("/me");
+  revalidatePath("/me/profile");
+  const returnTo = String(formData.get("returnTo") ?? "/me/profile");
+  redirect(returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/me/profile");
+}
 
 export async function saveProfileAction(formData: FormData) {
   const user = await requireUser();

@@ -19,6 +19,7 @@ model User {
   location      String?
   photoUrl      String?
   profileStatus String   @default("draft")
+  usernameConfigured Boolean @default(true)
   feedSort      String   @default("publishedAtDesc")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
