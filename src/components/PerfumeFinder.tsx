@@ -40,7 +40,7 @@ function FinderSaveButton({ kind, catalogKey }: { kind: "shelf" | "wishlist"; ca
       setSaved(true);
     });
   };
-  const label = saved ? (kind === "shelf" ? "On your shelf" : "Wishlisted") : pending ? "Saving…" : kind === "shelf" ? "Add to shelf" : "Wishlist";
+  const label = saved ? (kind === "shelf" ? "Added to Shelf" : "Wishlisted") : pending ? "Saving…" : kind === "shelf" ? "I own" : "Wishlist";
   return <form onSubmit={submit}><input type="hidden" name={kind === "shelf" ? "catalogKey" : "targetId"} value={catalogKey} />{kind === "wishlist" ? <input type="hidden" name="targetType" value="catalog" /> : null}<button className={`card-action finder-save ${saved ? "is-saved" : ""}`} type="submit" disabled={pending || saved} aria-live="polite">{saved ? "✓ " : ""}{label}</button></form>;
 }
 

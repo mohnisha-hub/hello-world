@@ -1,3 +1,5 @@
+import masterCatalog from "../../data/top_500_fragrances_master.json";
+
 export type FragranceEntry = {
   brand: string;
   name: string;
@@ -32,7 +34,7 @@ function row(
   return { brand, name, top: split(top), middle: split(middle), base: split(base), rating, imageUrl };
 }
 
-export const FRAGRANCE_CATALOG: FragranceEntry[] = [
+const CURATED_FRAGRANCE_CATALOG: FragranceEntry[] = [
   row("Maison Francis Kurkdjian", "Baccarat Rouge 540 Extrait", "Jasmine, Bitter almond", "Cedar, Saffron", "Ambergris, Woody musk", 4.5, IMG.bottle),
   row("Maison Francis Kurkdjian", "Baccarat Rouge 540", "Saffron, Jasmine", "Amberwood, Fir resin", "Cedar, Ambergris", 4.4, IMG.bottle),
   row("Maison Francis Kurkdjian", "Grand Soir", "Lavender", "Cistus, Benzoin", "Tonka bean, Vanilla, Amber", 4.4, IMG.gold),
@@ -183,6 +185,37 @@ export const FRAGRANCE_CATALOG: FragranceEntry[] = [
 function normalize(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
+
+type ImportedPerfume = {
+  brand: string;
+  name: string;
+  top_notes?: string;
+  middle_notes?: string;
+  base_notes?: string;
+  rating?: number;
+};
+
+type ImportedMasterCatalog = { brands: { perfumes: ImportedPerfume[] }[] };
+
+const importedEntries = (masterCatalog as ImportedMasterCatalog).brands.flatMap(({ perfumes }) => perfumes).map((perfume, index) => {
+  const split = (notes?: string) => (notes || "").split(",").map((note) => note.trim()).filter(Boolean);
+  const images = [IMG.bottle, IMG.dark, IMG.gold, IMG.wood, IMG.floral, IMG.green, IMG.night, IMG.mist];
+  return {
+    brand: perfume.brand,
+    name: perfume.name,
+    top: split(perfume.top_notes),
+    middle: split(perfume.middle_notes),
+    base: split(perfume.base_notes),
+    rating: Number.isFinite(perfume.rating) ? Number(perfume.rating) : 4,
+    imageUrl: images[index % images.length],
+  } satisfies FragranceEntry;
+});
+
+// The attached top-500 imports are bundled as a local catalogue. They power
+// suggestions and the Perfume Finder, but never create marketplace listings.
+export const FRAGRANCE_CATALOG: FragranceEntry[] = Array.from(
+  new Map([...CURATED_FRAGRANCE_CATALOG, ...importedEntries].map((entry) => [`${normalize(entry.brand)}--${normalize(entry.name)}`, entry])).values(),
+);
 
 export function fragranceLabel(entry: FragranceEntry) {
   return `${entry.brand} - ${entry.name}`;

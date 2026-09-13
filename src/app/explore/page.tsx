@@ -39,6 +39,11 @@ export default async function ExplorePage() {
         <Link className="btn" href="/me/create">List something</Link>
       </div>
       <PerfumeFinder signedIn={Boolean(session?.user?.id)} />
+      <div className="border-t border-line pt-8">
+        <p className="eyebrow">MARKETPLACE</p>
+        <h2 className="mt-1 font-serif text-3xl sm:text-4xl">Live bottles and active bids.</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Browse what collectors are ready to pass on, then narrow by house, note, type, size, price, or location.</p>
+      </div>
       <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={users} ratingMap={ratingMap} />
     </div>
   );

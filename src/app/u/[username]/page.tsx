@@ -9,9 +9,10 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { bidForm, deletePerfumeForm, pinForm, soldForm } from "@/actions/form-wrappers";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { formatMoney } from "@/lib/money";
-import { saveScentShowcaseAction, togglePodiumAction, toggleScentHeartAction } from "@/actions/profile";
+import { saveScentShowcaseAction, togglePodiumAction } from "@/actions/profile";
 import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 import { settleExpiredAuctions } from "@/lib/auctions";
+import { ScentHeartButton } from "@/components/ScentHeartButton";
 
 export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ username: string }>; searchParams: Promise<{ view?: string; shelfPage?: string; availablePage?: string; bidsPage?: string }> }) {
   const { username } = await params;
@@ -81,6 +82,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
     return perfume ? [{ key, label, perfume }] : [];
   });
   const scentHearts = await prisma.scentHeart.findMany({ where: { profileId: user.id }, select: { slot: true, userId: true } });
+  const totalHearts = scentHearts.length;
   const heartCounts = Object.fromEntries(scentHearts.reduce((counts, heart) => counts.set(heart.slot, (counts.get(heart.slot) ?? 0) + 1), new Map<string, number>()));
   const heartedSlots = new Set(scentHearts.filter((heart) => heart.userId === session?.user?.id).map((heart) => heart.slot));
   const selectableShowcasePerfumes = [...shelfPerfumes].sort((a, b) => a.name.localeCompare(b.name));
@@ -119,6 +121,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
           <div><p>{liveCollections.length}</p><span>Collections</span></div>
           <div><p>{availableListings.length}</p><span>Available</span></div>
           <div><p>{publicWishlistCollections.length + publicWishlistPerfumes.length}</p><span>Wishlist</span></div>
+          <div><p>{totalHearts}</p><span>Hearts</span></div>
         </div>
         {user.bio ? <p className="border-t border-line px-5 py-4 text-sm leading-6 sm:px-7">{user.bio}</p> : null}
       </section>
@@ -236,15 +239,11 @@ function NewCollectorGuide({ profilePublished }: { profilePublished: boolean }) 
 }
 
 function TopThree({ perfumes, username, profileId, heartCounts, heartedSlots, canHeart }: { perfumes: { id: string; name: string; brand: string | null; imageUrl: string | null }[]; username: string; profileId: string; heartCounts: Record<string, number>; heartedSlots: Set<string>; canHeart: boolean }) {
-  return <section className="top-three"><div className="mb-4"><p className="eyebrow">THE PODIUM</p><h2 className="section-heading">Top 3 perfumes</h2></div><div className="top-three-grid">{perfumes.map((perfume, index) => { const slot = `top${index + 1}`; return <div key={perfume.id} className={`top-three-card top-three-rank-${index + 1}`}><Link href={`/p/${perfume.id}`}><span className="top-three-rank">0{index + 1}</span><span><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{username}</em></span></Link><ScentHeartButton profileId={profileId} perfumeId={perfume.id} slot={slot} count={heartCounts[slot] ?? 0} hearted={heartedSlots.has(slot)} canHeart={canHeart} /></div>; })}</div></section>;
+  return <section className="top-three"><div className="mb-4"><p className="eyebrow">THE PODIUM</p><h2 className="section-heading">Top 3 perfumes</h2></div><div className="top-three-grid">{perfumes.map((perfume, index) => { const slot = `top${index + 1}`; return <div key={perfume.id} className={`top-three-card top-three-rank-${index + 1}`}><Link href={`/p/${perfume.id}`}><span className="top-three-rank">0{index + 1}</span><span><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{username}</em></span></Link><ScentHeartButton profileId={profileId} perfumeId={perfume.id} slot={slot} count={heartCounts[slot] ?? 0} hearted={heartedSlots.has(slot)} canHeart={canHeart} variant="podium" /></div>; })}</div></section>;
 }
 
 function ScentRoleCard({ slot, label, perfume, username, profileId, heartCount, hearted, canHeart }: { slot: string; label: string; perfume: { id: string; name: string; brand: string | null }; username: string; profileId: string; heartCount: number; hearted: boolean; canHeart: boolean }) {
-  return <div className="scent-role-card"><Link href={`/p/${perfume.id}`}><span>{label}</span><strong>{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</strong><small>@{username} ↗</small></Link><ScentHeartButton profileId={profileId} perfumeId={perfume.id} slot={slot} count={heartCount} hearted={hearted} canHeart={canHeart} /></div>;
-}
-
-function ScentHeartButton({ profileId, perfumeId, slot, count, hearted, canHeart }: { profileId: string; perfumeId: string; slot: string; count: number; hearted: boolean; canHeart: boolean }) {
-  return <form action={toggleScentHeartAction} className="scent-heart"><input type="hidden" name="profileId" value={profileId} /><input type="hidden" name="perfumeId" value={perfumeId} /><input type="hidden" name="slot" value={slot} /><button type="submit" disabled={!canHeart} aria-label={hearted ? "Remove heart" : "Heart this pick"} aria-pressed={hearted} className={hearted ? "is-hearted" : ""}>♥ <span>{count || ""}</span></button></form>;
+  return <div className="scent-role-card"><Link href={`/p/${perfume.id}`}><span>{label}</span><strong>{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</strong><small>@{username} ↗</small></Link><ScentHeartButton profileId={profileId} perfumeId={perfume.id} slot={slot} count={heartCount} hearted={hearted} canHeart={canHeart} variant="role" /></div>;
 }
 
 function ScentProfileEditor({ perfumes, topThree, slots }: { perfumes: { id: string; name: string; brand: string | null }[]; topThree: string[]; slots: Record<string, string | undefined> }) {
