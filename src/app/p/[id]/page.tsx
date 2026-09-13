@@ -101,6 +101,7 @@ export default async function PerfumePage({
         {perfume.catalogRating != null ? (
           <p className="text-sm">Community rating {perfume.catalogRating.toFixed(1)} / 5</p>
         ) : null}
+        {perfume.sourcedFrom ? <p className="text-sm text-muted">Sourced from {perfume.sourcedFrom}</p> : null}
         {perfume.topNotes || perfume.middleNotes || perfume.baseNotes ? (
           <div className="grid gap-3 text-sm md:grid-cols-3">
             {perfume.topNotes ? (

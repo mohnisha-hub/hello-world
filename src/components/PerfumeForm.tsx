@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { savePerfumeAction } from "@/actions/listings";
 import { perfumeCompletion, parseLinks } from "@/lib/completion";
@@ -27,6 +27,7 @@ type Perfume = {
   ml: number | null;
   shippingIncluded: boolean | null;
   description: string | null;
+  sourcedFrom?: string | null;
   topNotes?: string | null;
   middleNotes?: string | null;
   baseNotes?: string | null;
@@ -69,6 +70,7 @@ export function PerfumeForm({
     perfume ? perfume.shippingIncluded : null,
   );
   const [description, setDescription] = useState(perfume?.description ?? "");
+  const [sourcedFrom, setSourcedFrom] = useState(perfume?.sourcedFrom ?? "");
   const [topNotes, setTopNotes] = useState(perfume?.topNotes ?? "");
   const [middleNotes, setMiddleNotes] = useState(perfume?.middleNotes ?? "");
   const [baseNotes, setBaseNotes] = useState(perfume?.baseNotes ?? "");
@@ -111,6 +113,17 @@ export function PerfumeForm({
       }),
     [previewImage, perfume?.imageUrl, coverSource, hasUpload, kind, fill, ml, shippingIncluded, description, topNotes, middleNotes, baseNotes, links],
   );
+
+  useEffect(() => {
+    const match = brandPerfumes.find((entry) => entry.name.toLowerCase() === name.trim().toLowerCase());
+    if (!match) return;
+    if (!topNotes && !middleNotes && !baseNotes) {
+      setTopNotes(notesToText(match.top));
+      setMiddleNotes(notesToText(match.middle));
+      setBaseNotes(notesToText(match.base));
+    }
+    if (isMarketplace && !catalogRating) setCatalogRating(String(match.rating));
+  }, [brandPerfumes, name, topNotes, middleNotes, baseNotes, isMarketplace, catalogRating]);
 
   function applyCatalog(entry: FragranceEntry) {
     setBrand(entry.brand);
@@ -322,7 +335,7 @@ export function PerfumeForm({
           </label>
         </div>
       </div>
-      <label className="field">
+      {isMarketplace ? <label className="field">
         Listing type {isMarketplace ? null : <span className="text-xs text-muted">(optional)</span>}
         <select name="kind" required={isMarketplace} value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="">Select a type</option>
@@ -331,11 +344,11 @@ export function PerfumeForm({
           <option value="partial">Partial</option>
           <option value="decant">Decant</option>
         </select>
-      </label>
-      <label className="field">
+      </label> : null}
+      {isMarketplace ? <label className="field">
         Millilitres {isMarketplace ? null : <span className="text-xs text-muted">(optional)</span>}
         <input name="ml" type="number" min="0.1" step="0.1" required={isMarketplace} value={ml} onChange={(e) => setMl(e.target.value)} />
-      </label>
+      </label> : null}
       {isMarketplace ? <label className="field">
         Units available
         <input name="unitsAvailable" type="number" min="1" step="1" required defaultValue={perfume?.unitsAvailable ?? 1} />
@@ -351,7 +364,7 @@ export function PerfumeForm({
         />
         Shipping included
       </label></> : null}
-      <label className="field">
+      {isMarketplace ? <label className="field">
         Community rating (out of 5)
         <input
           name="catalogRating"
@@ -362,7 +375,7 @@ export function PerfumeForm({
           value={catalogRating}
           onChange={(e) => setCatalogRating(e.target.value)}
         />
-      </label>
+      </label> : null}
       <div className="grid gap-3 md:grid-cols-3">
         <label className="field">
           Top notes
@@ -381,10 +394,14 @@ export function PerfumeForm({
         Description
         <textarea name="description" rows={4} value={description} onChange={(e) => setDescription(e.target.value)} />
       </label>
+      <label className="field">
+        Sourced from <span className="text-xs text-muted">(optional)</span>
+        <input name="sourcedFrom" placeholder="A gift, a boutique, a swap…" value={sourcedFrom} onChange={(e) => setSourcedFrom(e.target.value)} />
+      </label>
       <div className="space-y-2">
-        <p className="text-sm">External links</p>
+        <div className="flex items-center justify-between gap-3"><p className="text-sm">External links <span className="text-xs text-muted">(optional)</span></p><button className="text-sm text-accent underline underline-offset-4" type="button" onClick={() => setLinks([...links, { label: "", url: "" }])}>Add link</button></div>
         {links.map((link, i) => (
-          <div key={i} className="grid gap-2 sm:grid-cols-2">
+          <div key={i} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
             <input
               name="linkLabel"
               placeholder="Label"
@@ -405,11 +422,9 @@ export function PerfumeForm({
                 setLinks(next);
               }}
             />
+            <button type="button" className="btn-ghost px-3 text-sm" aria-label={`Remove link ${i + 1}`} onClick={() => setLinks(links.filter((_, index) => index !== i))}>Remove</button>
           </div>
         ))}
-        <button className="btn-ghost text-sm" type="button" onClick={() => setLinks([...links, { label: "", url: "" }])}>
-          Add another link
-        </button>
       </div>
       <div className="flex flex-wrap gap-3">
         <button className="btn btn-ghost" formAction={(fd) => run("save", fd)} type="submit">

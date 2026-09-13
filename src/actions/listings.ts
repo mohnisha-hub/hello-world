@@ -143,6 +143,7 @@ export async function savePerfumeAction(formData: FormData) {
   if (listingIntent === "marketplace" && (!Number.isInteger(unitsAvailable) || unitsAvailable < 1)) return { error: "Enter at least one available unit." };
   const shippingIncluded = formData.getAll("shippingIncluded").map(String).includes("true");
   const description = String(formData.get("description") ?? "").trim() || null;
+  const sourcedFrom = String(formData.get("sourcedFrom") ?? "").trim() || null;
   const topNotes = String(formData.get("topNotes") ?? "").trim() || null;
   const middleNotes = String(formData.get("middleNotes") ?? "").trim() || null;
   const baseNotes = String(formData.get("baseNotes") ?? "").trim() || null;
@@ -195,11 +196,12 @@ export async function savePerfumeAction(formData: FormData) {
     unitsAvailable: listingIntent === "collection" ? 1 : unitsAvailable,
     shippingIncluded: listingIntent === "collection" ? null : shippingIncluded,
     description,
+    sourcedFrom,
     topNotes,
     middleNotes,
     baseNotes,
     catalogRating:
-      catalogRating != null && Number.isFinite(catalogRating) && catalogRating >= 0 && catalogRating <= 5
+      listingIntent === "marketplace" && catalogRating != null && Number.isFinite(catalogRating) && catalogRating >= 0 && catalogRating <= 5
         ? catalogRating
         : null,
     links: JSON.stringify(links),
