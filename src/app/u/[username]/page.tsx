@@ -9,6 +9,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { bidForm, deletePerfumeForm, pinForm, soldForm } from "@/actions/form-wrappers";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { formatMoney } from "@/lib/money";
+import { saveScentShowcaseAction } from "@/actions/profile";
+import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
@@ -59,6 +61,18 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     : [];
   const bidHighByPerfume = Object.fromEntries(bidHighs.map((bid) => [bid.perfumeId, bid._max.amountCents]));
   const availableListings = user.perfumes.filter((perfume) => perfume.status === "published");
+  const scentShowcase = parseScentShowcase(user.scentShowcase);
+  const showcasePerfumes = new Map(user.perfumes.filter((perfume) => perfume.status === "published" || perfume.status === "sold").map((perfume) => [perfume.id, perfume]));
+  const topThree = scentShowcase.top3.flatMap((id) => {
+    const perfume = showcasePerfumes.get(id);
+    return perfume ? [perfume] : [];
+  });
+  const scentRoles = SCENT_PROFILE_SLOTS.flatMap(([key, label]) => {
+    const perfumeId = scentShowcase.slots[key];
+    const perfume = perfumeId ? showcasePerfumes.get(perfumeId) : null;
+    return perfume ? [{ key, label, perfume }] : [];
+  });
+  const selectableShowcasePerfumes = [...showcasePerfumes.values()].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="space-y-10">
@@ -99,7 +113,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       </section>
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <main className="space-y-10">
-          <ProfileSection title="Collections" detail={`Curated by @${user.username}`} tools={isOwner ? <SectionTools addHref="/me/collections/new" editHref="/me/collections" addLabel="Add collection" editLabel="Edit collections" /> : null}>
+          {topThree.length ? <TopThree perfumes={topThree} username={user.username} /> : null}
+
+          <ProfileSection title="Collections" detail="" tools={isOwner ? <SectionTools addHref="/me/collections/new" editHref="/me/collections" addLabel="Add collection" editLabel="Edit collections" /> : null}>
             {liveCollections.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {liveCollections.map((collection) => (
@@ -167,8 +183,16 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </main>
 
         <aside className="lg:sticky lg:top-20">
+          {isOwner || scentRoles.length ? (
+            <section className="scent-profile-panel">
+              <div className="mb-3"><p className="eyebrow">SCENT PROFILE</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My scent profile" : `@${user.username}'s picks`}</h2></div>
+              {scentRoles.length ? <div className="scent-role-list">{scentRoles.map(({ key, label, perfume }) => <ScentRoleCard key={key} label={label} perfume={perfume} username={user.username} />)}</div> : null}
+              {isOwner ? <ScentProfileEditor perfumes={selectableShowcasePerfumes} topThree={scentShowcase.top3} slots={scentShowcase.slots} /> : null}
+              {!isOwner && !scentRoles.length ? null : null}
+            </section>
+          ) : null}
           <section className="rounded-2xl border border-line bg-paper p-4">
-            <div className="mb-3"><p className="eyebrow">Saved finds</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My wishlist" : `@${user.username}'s wishlist`}</h2></div>
+            <div className="mb-3"><p className="eyebrow">WISHLIST</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My wishlist" : `@${user.username}'s wishlist`}</h2></div>
             <div className="space-y-2">
               {publicWishlistCollections.map((collection) => <WishlistMiniCard key={collection.id} href={`/u/${collection.owner.username}/c/${collection.id}`} title={collection.name} meta={`${collection.perfumes.length} perfumes`} />)}
               {publicWishlistPerfumes.map((perfume) => <WishlistMiniCard key={perfume.id} href={`/p/${perfume.id}`} title={perfume.name} meta={`@${perfume.owner.username}`} />)}
@@ -180,6 +204,23 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       </div>
     </div>
   );
+}
+
+function TopThree({ perfumes, username }: { perfumes: { id: string; name: string; brand: string | null; imageUrl: string | null }[]; username: string }) {
+  return <section className="top-three"><div className="mb-4"><p className="eyebrow">THE PODIUM</p><h2 className="section-heading">Top 3 perfumes</h2></div><div className="top-three-grid">{perfumes.map((perfume, index) => <Link key={perfume.id} href={`/p/${perfume.id}`} className={`top-three-card top-three-rank-${index + 1}`}><span className="top-three-rank">0{index + 1}</span><span><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{username}</em></span></Link>)}</div></section>;
+}
+
+function ScentRoleCard({ label, perfume, username }: { label: string; perfume: { id: string; name: string; brand: string | null }; username: string }) {
+  return <Link href={`/p/${perfume.id}`} className="scent-role-card"><span>{label}</span><strong>{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</strong><small>@{username} ↗</small></Link>;
+}
+
+function ScentProfileEditor({ perfumes, topThree, slots }: { perfumes: { id: string; name: string; brand: string | null }[]; topThree: string[]; slots: Record<string, string | undefined> }) {
+  if (!perfumes.length) return <p className="mt-3 text-sm leading-6 text-muted">Publish a perfume to start your scent profile.</p>;
+  return <details className="scent-profile-editor"><summary>Curate your picks</summary><form action={saveScentShowcaseAction}><fieldset><legend>Top 3</legend>{["top1", "top2", "top3"].map((name, index) => <label key={name}>#{index + 1}<ShowcaseSelect name={name} value={topThree[index]} perfumes={perfumes} /></label>)}</fieldset><fieldset><legend>Roles</legend>{SCENT_PROFILE_SLOTS.map(([key, label]) => <label key={key}>{label}<ShowcaseSelect name={key} value={slots[key]} perfumes={perfumes} /></label>)}</fieldset><button className="btn btn-compact" type="submit">Save scent profile</button></form></details>;
+}
+
+function ShowcaseSelect({ name, value, perfumes }: { name: string; value?: string; perfumes: { id: string; name: string; brand: string | null }[] }) {
+  return <select name={name} defaultValue={value || ""}><option value="">Not set</option>{perfumes.map((perfume) => <option key={perfume.id} value={perfume.id}>{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</option>)}</select>;
 }
 
 function ProfileSection({ title, detail, tools, children }: { title: string; detail: string; tools?: React.ReactNode; children: React.ReactNode }) {

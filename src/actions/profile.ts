@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/listings";
 import { getSessionUser } from "@/lib/acting";
 import { trySaveUpload } from "@/lib/upload";
 import { suggestedAvatar } from "@/lib/photos";
+import { SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
@@ -105,5 +106,25 @@ export async function setFeedSortAction(formData: FormData) {
     data: { feedSort: feedSort === "publishedAtAsc" ? "publishedAtAsc" : "publishedAtDesc" },
   });
   revalidatePath("/me");
+  revalidatePath(`/u/${user.username}`);
+}
+
+export async function saveScentShowcaseAction(formData: FormData) {
+  const user = await requireUser();
+  const ownedPerfumes = await prisma.perfume.findMany({
+    where: { ownerId: user.id, NOT: { status: "deleted" } },
+    select: { id: true },
+  });
+  const ownedIds = new Set(ownedPerfumes.map((perfume) => perfume.id));
+  const top3 = ["top1", "top2", "top3"]
+    .map((name) => String(formData.get(name) ?? ""))
+    .filter((id, index, values) => ownedIds.has(id) && values.indexOf(id) === index);
+  const slots = Object.fromEntries(
+    SCENT_PROFILE_SLOTS.flatMap(([key]) => {
+      const perfumeId = String(formData.get(key) ?? "");
+      return ownedIds.has(perfumeId) ? [[key, perfumeId]] : [];
+    }),
+  );
+  await prisma.user.update({ where: { id: user.id }, data: { scentShowcase: JSON.stringify({ top3, slots }) } });
   revalidatePath(`/u/${user.username}`);
 }

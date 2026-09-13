@@ -52,9 +52,8 @@ export default async function CollectionDetailPage({
             <StatusBadge status={collection.status} />
           </div>
           <p className="text-muted">
-            {visiblePerfumes.filter((p) => p.status === "published" || p.status === "sold").length} perfume
-            {visiblePerfumes.filter((p) => p.status === "published" || p.status === "sold").length === 1 ? "" : "s"} · @
-            {username}
+            Curated by @{username} · {visiblePerfumes.filter((p) => p.status === "published" || p.status === "sold").length} perfume
+            {visiblePerfumes.filter((p) => p.status === "published" || p.status === "sold").length === 1 ? "" : "s"}
           </p>
           {session?.user && !isOwner ? (
             <form action={wishlistForm} className="mt-3">

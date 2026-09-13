@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { logoutAction } from "@/actions/auth";
 import { NotificationBell } from "@/components/NotificationBell";
+import { NavMenu } from "@/components/NavMenu";
 
 export async function Nav() {
   let session = null;
@@ -23,17 +24,7 @@ export async function Nav() {
             <>
               <Link className="nav-link" href={`/u/${session.user.username}`}>My profile</Link>
               <Link className="nav-link" href="/me/messages">Messages</Link>
-              <details className="nav-menu">
-                <summary>My Atelier</summary>
-                <div className="nav-menu-panel">
-                  <Link href="/me/create">Create</Link>
-                  <Link href="/me/drafts">Drafts</Link>
-                  <Link href="/me/activity">Activity</Link>
-                  <Link href="/me/bids">Bids</Link>
-                  <Link href="/me/buys">Buys</Link>
-                  <Link href="/me/wishlist">Wishlist</Link>
-                </div>
-              </details>
+              <NavMenu />
               <NotificationBell />
               <form action={logoutAction}>
                 <button className="nav-link" type="submit">
