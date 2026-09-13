@@ -2,7 +2,6 @@ import Link from "next/link";
 import { cardInitials, cardTone } from "@/lib/photos";
 import { formatMoney, formatPricePerMl } from "@/lib/money";
 import { StatusBadge } from "@/components/StatusBadge";
-import { SaleBadge } from "@/components/SaleBadge";
 import { perfumeCompletion, parseLinks } from "@/lib/completion";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 
@@ -66,8 +65,14 @@ export function PerfumeCard({
   const amount = listingAmountCents(perfume);
   const bid = isBidListing(perfume.saleType);
   const completion = perfumeCompletion(perfume);
+  const details = [
+    perfume.ml ? `${perfume.ml} ml` : null,
+    perfume.ml ? formatPricePerMl(amount, perfume.ml) : null,
+    perfume.kind || null,
+    perfume.shippingIncluded ? "Shipping included" : null,
+  ].filter(Boolean);
   return (
-    <Link href={href} className={`card group flex cursor-pointer gap-3 p-3 ${bid ? "listing-card-bid" : "listing-card-buy"}`}>
+    <Link href={href} className="card group listing-card flex cursor-pointer gap-3 p-3">
       <div className={`card-art art-tone-${cardTone(perfume.name)}`} aria-hidden="true">
         <span>{cardInitials(perfume.name)}</span>
         {perfume.imageUrl ? (
@@ -78,17 +83,11 @@ export function PerfumeCard({
       <div className="min-w-0 flex-1 space-y-1.5 py-1">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0"><p className="eyebrow line-clamp-1">{perfume.brand || "Perfume"}</p><h3 className="line-clamp-2 text-xl leading-tight group-hover:text-accent">{perfume.name}</h3></div>
-          <div className="flex items-center gap-1">
-            <SaleBadge saleType={perfume.saleType} />
-            {showStatus ? <StatusBadge status={perfume.status} /> : null}
-          </div>
+          {perfume.status === "published" ? <span className="listing-live-dot" aria-label="Available" title="Available" /> : showStatus ? <StatusBadge status={perfume.status} /> : null}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className={bid ? "listing-price listing-price-bid" : "listing-price listing-price-buy"}>{bid ? `Min bid ${formatMoney(amount)}` : formatMoney(amount)}</span>
-          {perfume.ml ? <span className="listing-detail">{perfume.ml} ml</span> : null}
-          {perfume.ml ? <span className="listing-detail">{formatPricePerMl(amount, perfume.ml)}</span> : null}
-          {perfume.kind ? <span className="listing-detail">{perfume.kind}</span> : null}
-          {perfume.shippingIncluded ? <span className="listing-detail">Shipping incl.</span> : null}
+        <div className="listing-summary">
+          <span className="listing-amount">{bid ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span>
+          {details.length ? <span className="listing-meta">{details.join(" · ")}</span> : null}
         </div>
         {username ? <p className="text-xs text-muted">Offered by @{username}</p> : null}
         {showStatus ? <p className="text-xs text-muted">Completion {completion.percent}%</p> : null}

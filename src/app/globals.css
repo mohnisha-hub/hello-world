@@ -184,14 +184,10 @@ h3 {
   box-shadow: 0 12px 30px color-mix(in srgb, var(--ink) 7%, transparent);
 }
 
-.listing-card-buy { border-left: 3px solid color-mix(in srgb, var(--live) 65%, transparent); }
-.listing-card-bid { border-left: 3px solid color-mix(in srgb, var(--accent) 75%, transparent); }
 .listing-price, .listing-detail, .collection-count, .card-action {
   display: inline-flex; align-items: center; border-radius: 999px; font-size: .7rem; line-height: 1; padding: .36rem .52rem;
 }
-.listing-price { font-weight: 650; }
-.listing-price-buy { background: var(--live-bg); color: var(--live); }
-.listing-price-bid { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.listing-card { border-left: 1px solid var(--line); }.listing-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem; }.listing-amount { color: var(--live); font-size: .86rem; font-weight: 700; }.listing-meta { color: var(--muted); font-size: .72rem; }.listing-live-dot { display: inline-block; flex: 0 0 auto; width: .52rem; height: .52rem; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 3px var(--live-bg); }
 .listing-detail, .collection-count { border: 1px solid var(--line); color: var(--muted); background: var(--bg); }
 .card-arrow { color: var(--accent); font-size: .9rem; transition: transform .15s ease; }
 .group:hover .card-arrow { transform: translate(2px, -2px); }
