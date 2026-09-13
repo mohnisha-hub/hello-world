@@ -1,8 +1,6 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 
-export default async function HomePage() {
-  // The old iframe used fixture records and therefore could not safely open
-  // production listings or submit bids. The live marketplace is now the
-  // canonical home for every visitor.
-  redirect("/explore");
+export default function HomePage() {
+  return <div className="atelier-landing"><section className="landing-hero"><Image className="landing-hero-image" src="/atelier/atelier-landing-hero-v1.png" alt="An amber fragrance bottle in a sunlit stone gallery" fill priority sizes="100vw" /><div className="landing-hero-wash" /><div className="landing-hero-copy"><p className="eyebrow text-white/75">ATELIER · PERFUME COMMUNITY</p><h1>Make room for the scents that stay with you.</h1><p>A quiet place to discover perfume, share your shelf, and find the bottles people are ready to pass on.</p><div className="landing-actions"><Link className="landing-primary" href="/explore">Enter Atelier <span>→</span></Link><Link className="landing-secondary" href="#how-it-works">Discover more <span>↓</span></Link></div></div><p className="landing-caption">A community built around the rituals of scent.</p></section><section id="how-it-works" className="landing-intro"><p className="eyebrow">A NEW KIND OF COLLECTION</p><h2>Your perfumes are more than inventory.</h2><div className="landing-pillars"><article><span>01</span><h3>Discover</h3><p>Follow notes, houses, and the personalities behind remarkable shelves.</p></article><article><span>02</span><h3>Collect</h3><p>Build a scent profile, choose your Podium, and let your favourites speak for you.</p></article><article><span>03</span><h3>Exchange</h3><p>Buy, sell, and host bids with people who know the difference a perfume can make.</p></article></div><Link className="btn" href="/explore">Explore Atelier</Link></section></div>;
 }
