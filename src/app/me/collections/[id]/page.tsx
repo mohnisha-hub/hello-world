@@ -5,6 +5,7 @@ import { PerfumeCard } from "@/components/Cards";
 import Link from "next/link";
 import { deleteCollectionForm } from "@/actions/form-wrappers";
 import { getActingUser } from "@/lib/acting";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 
 export default async function EditCollectionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,15 +22,13 @@ export default async function EditCollectionPage({ params }: { params: Promise<{
         collection={collection}
         publishedPerfumeCount={collection.perfumes.filter((p) => p.status === "published").length}
       />
-      <div className="flex gap-3">
+      <div className="listing-owner-actions">
         <Link className="btn" href={`/me/perfumes/new?collectionId=${collection.id}`}>
           + Perfume
         </Link>
         <form action={deleteCollectionForm}>
           <input type="hidden" name="id" value={collection.id} />
-          <button className="btn btn-ghost" type="submit">
-            Delete collection
-          </button>
+          <ConfirmDeleteButton className="btn btn-danger-outline" confirmation="Delete this collection? Its perfumes will move to Uncategorized and the collection can be restored later.">Delete collection</ConfirmDeleteButton>
         </form>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

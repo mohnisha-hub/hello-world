@@ -11,6 +11,7 @@ import { SaleBadge } from "@/components/SaleBadge";
 import { Notice } from "@/components/Notice";
 import { settleExpiredAuctions } from "@/lib/auctions";
 import { GuestAuthCta } from "@/components/GuestAuthCta";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import {
   acceptBidForm,
   bidForm,
@@ -216,7 +217,7 @@ export default async function PerfumePage({
           </section>
         ) : null}
         {isOwner ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="listing-owner-actions">
             <Link className="btn btn-ghost" href={`/me/perfumes/${id}/edit`}>
               Edit
             </Link>
@@ -230,9 +231,7 @@ export default async function PerfumePage({
             ) : null}
             <form action={deletePerfumeForm}>
               <input type="hidden" name="id" value={id} />
-              <button className="btn-ghost" type="submit">
-                Delete
-              </button>
+              <ConfirmDeleteButton className="btn btn-danger-outline" confirmation="Remove this perfume from your public profile? It will be moved to Drafts & deleted, where you can restore it later.">Delete</ConfirmDeleteButton>
             </form>
           </div>
         ) : null}

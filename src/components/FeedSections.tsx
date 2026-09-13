@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CollectionCard, PerfumeCard } from "@/components/Cards";
 import { pinForm, soldForm, deletePerfumeForm } from "@/actions/form-wrappers";
 import { SortSelect } from "@/components/SortSelect";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import type { FeedItem } from "@/lib/feed";
 
 function ItemActions({
@@ -37,9 +38,7 @@ function ItemActions({
           {item.kind === "perfume" ? (
             <form action={deletePerfumeForm}>
               <input type="hidden" name="id" value={item.perfume.id} />
-              <button className="btn-ghost" type="submit">
-                Delete
-              </button>
+              <ConfirmDeleteButton className="card-action card-action-danger" confirmation="Remove this perfume from your public profile? It will be moved to Drafts & deleted, where you can restore it later.">Delete</ConfirmDeleteButton>
             </form>
           ) : null}
           {item.kind === "perfume" ? (
