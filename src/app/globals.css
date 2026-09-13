@@ -147,7 +147,7 @@ h3 {
 
 .btn-danger-outline { border-color: color-mix(in srgb, var(--sold) 42%, var(--line)); background: transparent; color: var(--sold); }
 .btn-danger-outline:hover { border-color: var(--sold); background: var(--sold-bg); color: var(--sold); opacity: 1; }
-.listing-owner-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem; }
+.listing-owner-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: .55rem; }.listing-owner-actions > form { display: flex; }.listing-owner-actions .btn { min-height: 2.75rem; }
 
 .field {
   display: flex;
