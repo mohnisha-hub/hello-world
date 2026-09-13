@@ -14,7 +14,7 @@ export async function syncCollectionStatus(collectionId: string | null | undefin
   const drafts = perfumes.filter((p) => p.status === "draft");
 
   if (published.length >= 1) {
-    if (collection.status === "sold") {
+    if (collection.status !== "published") {
       await prisma.collection.update({
         where: { id: collectionId },
         data: { status: "published", publishedAt: collection.publishedAt ?? new Date() },
