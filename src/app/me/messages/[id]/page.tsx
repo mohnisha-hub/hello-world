@@ -6,6 +6,10 @@ import { messageForm } from "@/actions/form-wrappers";
 import { Notice } from "@/components/Notice";
 import { formatMoney } from "@/lib/money";
 
+function shortTime(date: Date) {
+  return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(date);
+}
+
 export default async function ConversationPage({
   params,
   searchParams,
@@ -29,31 +33,39 @@ export default async function ConversationPage({
   // Closing a completed deal marks the bid as archived, but the buyer and
   // seller should still be able to coordinate delivery asynchronously.
   const chatEnabled = convo.bid.kind === "buy" || ["accepted", "archived"].includes(convo.bid.status);
+  const counterpart = convo.bid.bidderId === session.user.id ? convo.bid.seller : convo.bid.bidder;
+  const closedDeal = convo.bid.status === "archived";
   return (
-    <div className="space-y-4">
-      <Link href="/me/messages">← All messages</Link>
-      <h1 className="text-3xl">{convo.bid.perfume.name}</h1>
+    <div className="chat-page">
+      <header className="chat-header">
+        <Link href="/me/messages" className="chat-back" aria-label="Back to all messages">←</Link>
+        <span className="chat-avatar" aria-hidden="true">{counterpart.username.slice(0, 2).toUpperCase()}</span>
+        <div className="min-w-0"><h1>@{counterpart.username}</h1><p>{closedDeal ? "Deal closed · keep coordinating here" : chatEnabled ? "Deal chat open" : "Waiting for seller acceptance"}</p></div>
+      </header>
       <Notice message={notice} />
-      <p className="text-muted">
-        {convo.bid.kind === "buy" ? "Buy" : "Bid"} {formatMoney(convo.bid.amountCents)} ·{" "}
-        <Link href={`/p/${convo.bid.perfume.id}`}>listing</Link>
-      </p>
-      <ul className="space-y-3">
+      <Link href={`/p/${convo.bid.perfume.id}`} className="chat-deal-card">
+        <span><strong>{convo.bid.perfume.name}</strong><small>{convo.bid.kind === "buy" ? "Purchase" : "Accepted bid"} · {formatMoney(convo.bid.amountCents)}</small></span>
+        <span aria-hidden="true">↗</span>
+      </Link>
+      <ul className="chat-transcript" aria-label="Conversation">
         {convo.messages.map((m) => (
-          <li key={m.id} className="card p-3">
-            <p className="text-xs text-muted">@{m.sender.username}</p>
-            <p>{m.body}</p>
+          <li key={m.id} className={`chat-message ${m.senderId === session.user.id ? "chat-message-own" : "chat-message-other"}`}>
+            <div className="chat-bubble">
+              {m.senderId !== session.user.id ? <p className="chat-message-sender">@{m.sender.username}</p> : null}
+              <p>{m.body}</p>
+              <time>{shortTime(m.createdAt)}</time>
+            </div>
           </li>
         ))}
       </ul>
       {chatEnabled ? (
-        <form action={messageForm} className="flex gap-2">
+        <form action={messageForm} className="chat-composer">
           <input type="hidden" name="conversationId" value={id} />
-          <input name="body" className="flex-1" placeholder="Write a note" required />
-          <button className="btn" type="submit">Send</button>
+          <textarea name="body" rows={1} placeholder="Write a message" aria-label="Message" required />
+          <button className="chat-send" type="submit" aria-label="Send message">↑</button>
         </form>
       ) : (
-        <div className="rounded-2xl border border-line bg-paper p-4 text-sm text-muted">
+        <div className="chat-pending">
           {convo.bid.status === "declined" ? "This bid was declined. The deal chat is closed." : "This deal thread is ready. The seller must accept the bid before messages can be exchanged."}
         </div>
       )}
