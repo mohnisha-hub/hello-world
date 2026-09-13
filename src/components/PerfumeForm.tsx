@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { savePerfumeAction } from "@/actions/listings";
 import { perfumeCompletion, parseLinks } from "@/lib/completion";
 import { suggestedPerfumeArt } from "@/lib/photos";
@@ -48,7 +49,9 @@ export function PerfumeForm({
   const [brand, setBrand] = useState(perfume?.brand ?? "");
   const [name, setName] = useState(perfume?.name ?? "");
   const [acceptBids, setAcceptBids] = useState(isBidListing(perfume?.saleType));
-  const [listingIntent, setListingIntent] = useState<"collection" | "marketplace">(perfume?.listingIntent === "collection" ? "collection" : "marketplace");
+  const [listingIntent, setListingIntent] = useState<"collection" | "marketplace" | null>(
+    perfume ? (perfume.listingIntent === "collection" ? "collection" : "marketplace") : null,
+  );
   const [price, setPrice] = useState(
     perfume && !isBidListing(perfume.saleType) ? String(perfume.priceCents / 100) : "",
   );
@@ -120,6 +123,10 @@ export function PerfumeForm({
   }
 
   async function run(intent: string, fd: FormData) {
+    if (!listingIntent) {
+      setError("Choose how you want to add this perfume first.");
+      return;
+    }
     fd.set("intent", intent);
     if (isMarketplace && acceptBids) fd.set("acceptBids", "true");
     const res = await savePerfumeAction(fd);
@@ -134,9 +141,31 @@ export function PerfumeForm({
         {perfume ? <StatusBadge status={perfume.status} /> : <StatusBadge status="draft" />}
       </div>
       <p className="text-muted">
-        Start with a social shelf entry or a sale listing. The catalogue can pre-fill notes, community rating, and an
-        available catalogue image.
+        {perfume
+          ? "Update the details of this perfume."
+          : "Choose where this perfume belongs before adding its details."}
       </p>
+      {!perfume && !listingIntent ? (
+        <div className="grid gap-3 sm:grid-cols-3" aria-label="Choose how to add this perfume">
+          <button type="button" className="card p-4 text-left hover:border-accent" onClick={() => setListingIntent("collection")}>
+            <p className="eyebrow">My collection</p>
+            <strong className="mt-1 block font-serif text-xl">Add to my shelf</strong>
+            <p className="mt-1 text-sm text-muted">Show it on your profile, collections, Podium, and scent profile. No sale actions.</p>
+          </button>
+          <button type="button" className="card p-4 text-left hover:border-accent" onClick={() => setListingIntent("marketplace")}>
+            <p className="eyebrow">Marketplace</p>
+            <strong className="mt-1 block font-serif text-xl">Sell or host bids</strong>
+            <p className="mt-1 text-sm text-muted">Set a buy price or timed bid and make it discoverable in Explore.</p>
+          </button>
+          <Link href="/me/perfumes/import" className="card p-4 text-left hover:border-accent">
+            <p className="eyebrow">Bulk upload</p>
+            <strong className="mt-1 block font-serif text-xl">Import a spreadsheet</strong>
+            <p className="mt-1 text-sm text-muted">Download the Atelier CSV template to add several shelf entries or listings.</p>
+          </Link>
+        </div>
+      ) : null}
+      {listingIntent ? <>
+      {!perfume ? <div className="flex items-center justify-between rounded-xl border border-line bg-paper px-4 py-3 text-sm"><span><span className="eyebrow mr-2">Adding as</span>{isMarketplace ? "Marketplace listing" : "Shelf entry"}</span><button type="button" className="text-accent underline underline-offset-4" onClick={() => setListingIntent(null)}>Change</button></div> : null}
       <div className="card p-4">
         <p className="text-sm text-muted">Listing completion</p>
         <p className="font-serif text-3xl">{completion.percent}%</p>
@@ -149,14 +178,6 @@ export function PerfumeForm({
       </div>
       {error ? <p className="text-accent">{error}</p> : null}
       <input type="hidden" name="listingIntent" value={listingIntent} />
-      <div className="grid gap-3 sm:grid-cols-2" aria-label="How should this perfume appear?">
-        <button type="button" className={`card p-4 text-left ${listingIntent === "collection" ? "border-accent" : ""}`} onClick={() => setListingIntent("collection")}>
-          <p className="eyebrow">My collection</p><strong className="mt-1 block font-serif text-xl">Add to my shelf</strong><p className="mt-1 text-sm text-muted">Show it on your public profile, collections, Podium, and scent profile. No price or sale actions.</p>
-        </button>
-        <button type="button" className={`card p-4 text-left ${listingIntent === "marketplace" ? "border-accent" : ""}`} onClick={() => setListingIntent("marketplace")}>
-          <p className="eyebrow">Marketplace</p><strong className="mt-1 block font-serif text-xl">Sell or host bids</strong><p className="mt-1 text-sm text-muted">Set a buy price or timed bid and make it discoverable in Explore.</p>
-        </button>
-      </div>
       <div className="space-y-3 rounded-2xl border border-line bg-paper p-4">
         <label className="field">
           Brand
@@ -403,6 +424,7 @@ export function PerfumeForm({
           </button>
         ) : null}
       </div>
+      </> : null}
     </form>
   );
 }

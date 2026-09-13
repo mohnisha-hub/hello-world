@@ -258,7 +258,7 @@ export async function importPerfumesAction(formData: FormData) {
   const rows = parseCsv(await csvFile.text());
   if (rows.length < 2) fail("Add at least one perfume row below the template headings.");
   const headers = rows[0].map((header) => header.toLowerCase().replace(/\s+/g, "_"));
-  const required = ["name", "listing_type", "kind", "ml"];
+  const required = ["name", "listing_intent"];
   if (required.some((header) => !headers.includes(header))) fail("This file is missing a required template column.");
   const records = rows.slice(1);
   if (records.length > 100) fail("Import up to 100 perfumes at a time.");
@@ -266,15 +266,17 @@ export async function importPerfumesAction(formData: FormData) {
   const issues: string[] = [];
   const parsed = records.map((row, index) => {
     const name = valueFor(row, "name");
-    const saleType = valueFor(row, "listing_type").toLowerCase() === "bid" ? "bid" : "buy";
+    const listingIntent = valueFor(row, "listing_intent").toLowerCase() === "collection" ? "collection" : "marketplace";
+    const saleType = listingIntent === "collection" ? "collection" : valueFor(row, "listing_type").toLowerCase() === "bid" ? "bid" : "buy";
     const kind = valueFor(row, "kind").toLowerCase();
     const ml = Number(valueFor(row, "ml"));
     const bidDurationHours = Number(valueFor(row, "bid_duration_hours") || "24");
     const amount = rupeesToPaise(valueFor(row, saleType === "bid" ? "min_bid_inr" : "price_inr"));
-    if (!name || !["retail", "tester", "partial", "decant"].includes(kind) || !Number.isFinite(ml) || ml <= 0 || amount == null || amount <= 0 || (saleType === "bid" && (!Number.isInteger(bidDurationHours) || bidDurationHours < 1 || bidDurationHours > 24 * 30))) issues.push(`Row ${index + 2}`);
-    return { name, saleType, kind, ml, amount, bidDurationHours, row };
+    const invalidMarketplace = !["retail", "tester", "partial", "decant"].includes(kind) || !Number.isFinite(ml) || ml <= 0 || amount == null || amount <= 0 || (saleType === "bid" && (!Number.isInteger(bidDurationHours) || bidDurationHours < 1 || bidDurationHours > 24 * 30));
+    if (!name || (listingIntent === "marketplace" && invalidMarketplace)) issues.push(`Row ${index + 2}`);
+    return { name, listingIntent, saleType, kind: kind || null, ml: Number.isFinite(ml) && ml > 0 ? ml : null, amount, bidDurationHours, row };
   });
-  if (issues.length) fail(`${issues.slice(0, 5).join(", ")} need a name, valid listing type, kind, ml, and INR price or minimum bid.`);
+  if (issues.length) fail(`${issues.slice(0, 5).join(", ")} need a name. Marketplace rows also need a valid type, ml, and INR price or minimum bid.`);
   const existingCollections = await prisma.collection.findMany({ where: { ownerId: user.id, NOT: { status: "deleted" } }, select: { id: true, name: true } });
   const collectionIds = new Map(existingCollections.map((collection) => [collection.name.toLowerCase(), collection.id]));
   for (const item of parsed) {
@@ -290,7 +292,7 @@ export async function importPerfumesAction(formData: FormData) {
       }
     }
     const shipping = ["true", "yes", "1"].includes(valueFor(item.row, "shipping_included").toLowerCase());
-    await prisma.perfume.create({ data: { ownerId: user.id, collectionId, brand: valueFor(item.row, "brand") || null, name: item.name, saleType: item.saleType, priceCents: item.amount!, minBidCents: item.saleType === "bid" ? item.amount : null, bidEndsAt: item.saleType === "bid" ? new Date(Date.now() + item.bidDurationHours * 60 * 60 * 1000) : null, kind: item.kind, ml: item.ml, shippingIncluded: shipping, description: valueFor(item.row, "description") || null, topNotes: valueFor(item.row, "top_notes") || null, middleNotes: valueFor(item.row, "middle_notes") || null, baseNotes: valueFor(item.row, "base_notes") || null, links: "[]", imageUrl: suggestedPerfumeArt(item.name) } });
+    await prisma.perfume.create({ data: { ownerId: user.id, collectionId, brand: valueFor(item.row, "brand") || null, name: item.name, listingIntent: item.listingIntent, saleType: item.saleType, priceCents: item.listingIntent === "marketplace" ? item.amount! : 0, minBidCents: item.saleType === "bid" ? item.amount : null, bidEndsAt: item.saleType === "bid" ? new Date(Date.now() + item.bidDurationHours * 60 * 60 * 1000) : null, kind: item.kind, ml: item.ml, shippingIncluded: item.listingIntent === "marketplace" ? shipping : false, description: valueFor(item.row, "description") || null, topNotes: valueFor(item.row, "top_notes") || null, middleNotes: valueFor(item.row, "middle_notes") || null, baseNotes: valueFor(item.row, "base_notes") || null, links: "[]", imageUrl: suggestedPerfumeArt(item.name) } });
   }
   revalidateOwner(user.username);
   redirect(`/me/perfumes?notice=${encodeURIComponent(`${parsed.length} perfume${parsed.length === 1 ? "" : "s"} imported as drafts.`)}`);
