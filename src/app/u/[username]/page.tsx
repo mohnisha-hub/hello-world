@@ -114,7 +114,6 @@ export default async function PublicProfilePage({ params, searchParams }: { para
           </div>
           <div className="profile-primary-actions">
             {isOwner ? <Link className="btn btn-ghost" href="/me/profile">Edit profile</Link> : null}
-            {!isOwner ? <Link className="btn btn-ghost" href="/explore">Explore scents</Link> : null}
           </div>
         </div>
         <div className="profile-stats">
@@ -205,14 +204,13 @@ export default async function PublicProfilePage({ params, searchParams }: { para
         </main>
 
         <aside className="profile-rail">
-          {isOwner || scentRoles.length ? (
-            <section className="scent-profile-panel">
-              <div className="mb-3"><p className="eyebrow">SCENT PROFILE</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My scent profile" : `@${user.username}'s picks`}</h2></div>
+          <section className="scent-profile-panel">
+              <div className="mb-3"><p className="eyebrow">SCENT PROFILE</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My scent profile" : `@${user.username}'s scent profile`}</h2></div>
+              {!isOwner && topThree.length ? <div className="scent-podium-preview"><p>Podium</p>{topThree.map((perfume, index) => <Link key={perfume.id} href={`/p/${perfume.id}`}><span>0{index + 1}</span><strong>{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</strong><b>↗</b></Link>)}</div> : null}
               {scentRoles.length ? <div className="scent-role-list">{scentRoles.map(({ key, label, perfume }) => <ScentRoleCard key={key} slot={key} label={label} perfume={perfume} username={user.username} profileId={user.id} heartCount={heartCounts[key] ?? 0} hearted={heartedSlots.has(key)} canHeart={Boolean(session?.user?.id && !isOwner)} />)}</div> : null}
               {isOwner ? <ScentProfileEditor perfumes={selectableShowcasePerfumes} topThree={scentShowcase.top3} slots={scentShowcase.slots} /> : null}
-              {!isOwner && !scentRoles.length ? null : null}
-            </section>
-          ) : null}
+              {!isOwner && !topThree.length && !scentRoles.length ? <p className="text-sm leading-6 text-muted">This collector has not shared their scent picks yet.</p> : null}
+          </section>
           <section className="rounded-2xl border border-line bg-paper p-4">
             <div className="mb-3"><p className="eyebrow">WISHLIST</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My wishlist" : `@${user.username}'s wishlist`}</h2></div>
             <div className="space-y-2">
