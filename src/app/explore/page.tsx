@@ -4,9 +4,11 @@ import { SearchFilter } from "@/components/SearchFilter";
 import { sellerRating } from "@/lib/listings";
 import { auth } from "@/auth";
 import { PerfumeFinder } from "@/components/PerfumeFinder";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import { getPublicActivity } from "@/lib/public-activity";
 
 export default async function ExplorePage() {
-  const [perfumes, collections, allUsers, session] = await Promise.all([
+  const [perfumes, collections, allUsers, session, activities] = await Promise.all([
     prisma.perfume.findMany({
       where: {
         status: "published",
@@ -29,6 +31,7 @@ export default async function ExplorePage() {
       take: 100,
     }),
     auth(),
+    getPublicActivity(6),
   ]);
   const marketplaceUsers = Array.from(new Map(perfumes.map((p) => [p.owner.id, p.owner])).values());
   const ratingRows = await Promise.all(marketplaceUsers.map(async (user) => [user.id, await sellerRating(user.id)] as const));
@@ -50,6 +53,7 @@ export default async function ExplorePage() {
         <h2 className="mt-1 font-serif text-3xl sm:text-4xl">Live bottles and active bids.</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Browse what collectors are ready to pass on, then narrow by house, note, type, size, price, or location.</p>
       </div>
+      <ActivityFeed activities={activities} compact />
       <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={allUsers} ratingMap={ratingMap} />
     </div>
   );
