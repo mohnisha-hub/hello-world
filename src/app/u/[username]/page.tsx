@@ -119,6 +119,9 @@ export default async function PublicProfilePage({ params, searchParams }: { para
         </div>
         {user.bio ? <p className="border-t border-line px-5 py-4 text-sm leading-6 sm:px-7">{user.bio}</p> : null}
       </section>
+      {isOwner && (user.profileStatus !== "published" || user.perfumes.length === 0) ? (
+        <NewCollectorGuide profilePublished={user.profileStatus === "published"} />
+      ) : null}
       <div className="profile-layout">
         <main className="profile-content">
           {topThree.length ? <TopThree perfumes={topThree} username={user.username} /> : null}
@@ -217,6 +220,16 @@ export default async function PublicProfilePage({ params, searchParams }: { para
       </div>
     </div>
   );
+}
+
+function NewCollectorGuide({ profilePublished }: { profilePublished: boolean }) {
+  const next = profilePublished
+    ? { href: "/me/perfumes/new", label: "Add your first perfume", copy: "Choose a shelf entry to share a favourite, or make a marketplace listing." }
+    : { href: "/me/profile", label: "Publish your profile", copy: "A public profile is how other collectors find your shelf and listings." };
+  return <section className="rounded-2xl border border-line bg-paper p-4 shadow-[0_12px_28px_rgba(46,34,23,.06)] sm:p-5">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="eyebrow">YOUR ATELIER, STARTED</p><h2 className="mt-1 font-serif text-2xl">One small step at a time.</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-muted">{next.copy}</p></div><Link href={next.href} className="btn shrink-0">{next.label}</Link></div>
+    <ol className="mt-4 grid gap-2 text-sm sm:grid-cols-3"><li className={`rounded-xl border px-3 py-2 ${profilePublished ? "border-accent/30 bg-accent/5 text-muted" : "border-accent bg-accent/10"}`}><span className="eyebrow block">01</span>{profilePublished ? "Profile published" : "Publish your profile"}</li><li className={`rounded-xl border px-3 py-2 ${profilePublished ? "border-accent bg-accent/10" : "border-line text-muted"}`}><span className="eyebrow block">02</span>Add a perfume</li><li className="rounded-xl border border-line px-3 py-2 text-muted"><span className="eyebrow block">03</span>Discover collectors</li></ol>
+  </section>;
 }
 
 function TopThree({ perfumes, username }: { perfumes: { id: string; name: string; brand: string | null; imageUrl: string | null }[]; username: string }) {
