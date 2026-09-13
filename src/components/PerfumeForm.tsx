@@ -15,6 +15,7 @@ type Perfume = {
   brand?: string | null;
   name: string;
   saleType?: string | null;
+  listingIntent?: string | null;
   priceCents: number;
   minBidCents?: number | null;
   bidEndsAt?: Date | string | null;
@@ -47,6 +48,7 @@ export function PerfumeForm({
   const [brand, setBrand] = useState(perfume?.brand ?? "");
   const [name, setName] = useState(perfume?.name ?? "");
   const [acceptBids, setAcceptBids] = useState(isBidListing(perfume?.saleType));
+  const [listingIntent, setListingIntent] = useState<"collection" | "marketplace">(perfume?.listingIntent === "collection" ? "collection" : "marketplace");
   const [price, setPrice] = useState(
     perfume && !isBidListing(perfume.saleType) ? String(perfume.priceCents / 100) : "",
   );
@@ -81,6 +83,7 @@ export function PerfumeForm({
   );
 
   const suggested = suggestedPerfumeArt(name || "perfume");
+  const isMarketplace = listingIntent === "marketplace";
   const previewImage = coverSource === "atelier" ? suggested : perfume?.imageUrl;
   const brandChoices = useMemo(() => popularBrands(), []);
   const brandPerfumes = useMemo(() => perfumesForBrand(brand), [brand]);
@@ -118,7 +121,7 @@ export function PerfumeForm({
 
   async function run(intent: string, fd: FormData) {
     fd.set("intent", intent);
-    if (acceptBids) fd.set("acceptBids", "true");
+    if (isMarketplace && acceptBids) fd.set("acceptBids", "true");
     const res = await savePerfumeAction(fd);
     if (res?.error) setError(res.error);
   }
@@ -131,8 +134,8 @@ export function PerfumeForm({
         {perfume ? <StatusBadge status={perfume.status} /> : <StatusBadge status="draft" />}
       </div>
       <p className="text-muted">
-        Name and either a buy price or minimum bid are required. Choose a brand from the bundled catalogue to pre-fill
-        notes, community rating, and an available catalogue image.
+        Start with a social shelf entry or a sale listing. The catalogue can pre-fill notes, community rating, and an
+        available catalogue image.
       </p>
       <div className="card p-4">
         <p className="text-sm text-muted">Listing completion</p>
@@ -145,6 +148,15 @@ export function PerfumeForm({
         </p>
       </div>
       {error ? <p className="text-accent">{error}</p> : null}
+      <input type="hidden" name="listingIntent" value={listingIntent} />
+      <div className="grid gap-3 sm:grid-cols-2" aria-label="How should this perfume appear?">
+        <button type="button" className={`card p-4 text-left ${listingIntent === "collection" ? "border-accent" : ""}`} onClick={() => setListingIntent("collection")}>
+          <p className="eyebrow">My collection</p><strong className="mt-1 block font-serif text-xl">Add to my shelf</strong><p className="mt-1 text-sm text-muted">Show it on your public profile, collections, Podium, and scent profile. No price or sale actions.</p>
+        </button>
+        <button type="button" className={`card p-4 text-left ${listingIntent === "marketplace" ? "border-accent" : ""}`} onClick={() => setListingIntent("marketplace")}>
+          <p className="eyebrow">Marketplace</p><strong className="mt-1 block font-serif text-xl">Sell or host bids</strong><p className="mt-1 text-sm text-muted">Set a buy price or timed bid and make it discoverable in Explore.</p>
+        </button>
+      </div>
       <div className="space-y-3 rounded-2xl border border-line bg-paper p-4">
         <label className="field">
           Brand
@@ -208,7 +220,7 @@ export function PerfumeForm({
           </ul>
         ) : null}
       </div>
-      <label className="flex items-center gap-2 text-sm">
+      {isMarketplace ? <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
           name="acceptBids"
@@ -216,8 +228,8 @@ export function PerfumeForm({
           onChange={(e) => setAcceptBids(e.target.checked)}
         />
         Accept bids
-      </label>
-      {acceptBids ? (
+      </label> : null}
+      {isMarketplace && acceptBids ? (
         <div className="grid gap-3 sm:grid-cols-2"><label className="field">
           Minimum bid (INR)
           <input name="minBid" type="number" min="1" step="0.01" required value={minBid} onChange={(e) => setMinBid(e.target.value)} />
@@ -225,7 +237,7 @@ export function PerfumeForm({
           {perfume?.bidEndsAt ? "Bid duration for a new round" : "Bid duration"}
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"><input name="bidDuration" type="number" min="1" max="30" required value={bidDuration} onChange={(e) => setBidDuration(e.target.value)} /><select name="bidDurationUnit" value={bidDurationUnit} onChange={(e) => setBidDurationUnit(e.target.value as "hours" | "days")}><option value="hours">hours</option><option value="days">days</option></select></div>
         </label>{perfume?.bidEndsAt ? <p className="sm:col-span-2 text-xs text-muted">Current round ends {new Date(perfume.bidEndsAt).toLocaleString()}. An active round keeps its existing deadline.</p> : <p className="sm:col-span-2 text-xs text-muted">At the deadline, the highest valid bid wins and Atelier opens the deal chat for both of you.</p>}</div>
-      ) : (
+      ) : isMarketplace ? (
         <label className="field">
           Price (INR)
           <input
@@ -238,7 +250,7 @@ export function PerfumeForm({
             onChange={(e) => setPrice(e.target.value)}
           />
         </label>
-      )}
+      ) : null}
       <label className="field">
         Collection
         <select name="collectionId" defaultValue={perfume?.collectionId ?? defaultCollectionId ?? ""}>
@@ -290,8 +302,8 @@ export function PerfumeForm({
         </div>
       </div>
       <label className="field">
-        Listing type
-        <select name="kind" required value={kind} onChange={(e) => setKind(e.target.value)}>
+        Listing type {isMarketplace ? null : <span className="text-xs text-muted">(optional)</span>}
+        <select name="kind" required={isMarketplace} value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="">Select a type</option>
           <option value="retail">Retail</option>
           <option value="tester">Tester</option>
@@ -300,14 +312,14 @@ export function PerfumeForm({
         </select>
       </label>
       <label className="field">
-        Millilitres
-        <input name="ml" type="number" min="0.1" step="0.1" required value={ml} onChange={(e) => setMl(e.target.value)} />
+        Millilitres {isMarketplace ? null : <span className="text-xs text-muted">(optional)</span>}
+        <input name="ml" type="number" min="0.1" step="0.1" required={isMarketplace} value={ml} onChange={(e) => setMl(e.target.value)} />
       </label>
-      <label className="field">
+      {isMarketplace ? <label className="field">
         Units available
         <input name="unitsAvailable" type="number" min="1" step="1" required defaultValue={perfume?.unitsAvailable ?? 1} />
-      </label>
-      <input type="hidden" name="shippingIncluded" value="false" />
+      </label> : null}
+      {isMarketplace ? <><input type="hidden" name="shippingIncluded" value="false" />
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
@@ -317,7 +329,7 @@ export function PerfumeForm({
           onChange={(e) => setShippingIncluded(e.target.checked)}
         />
         Shipping included
-      </label>
+      </label></> : null}
       <label className="field">
         Community rating (out of 5)
         <input

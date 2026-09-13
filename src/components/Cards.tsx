@@ -48,6 +48,7 @@ export function PerfumeCard({
     name: string;
     priceCents: number;
     saleType?: string | null;
+    listingIntent?: string | null;
     minBidCents?: number | null;
     ml: number | null;
     imageUrl: string | null;
@@ -62,6 +63,7 @@ export function PerfumeCard({
   showStatus?: boolean;
   username?: string;
 }) {
+  const isShelfPerfume = perfume.listingIntent === "collection";
   const amount = listingAmountCents(perfume);
   const bid = isBidListing(perfume.saleType);
   const completion = perfumeCompletion(perfume);
@@ -83,10 +85,10 @@ export function PerfumeCard({
       <div className="min-w-0 flex-1 space-y-1.5 py-1">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0"><p className="eyebrow line-clamp-1">{perfume.brand || "Perfume"}</p><h3 className="line-clamp-2 text-xl leading-tight group-hover:text-accent">{perfume.name}</h3></div>
-          {perfume.status === "published" ? <span className="listing-live-dot" aria-label="Available" title="Available" /> : showStatus ? <StatusBadge status={perfume.status} /> : null}
+          {perfume.status === "published" && !isShelfPerfume ? <span className="listing-live-dot" aria-label="Available" title="Available" /> : showStatus ? <StatusBadge status={perfume.status} /> : null}
         </div>
         <div className="listing-summary">
-          <span className="listing-amount">{bid ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span>
+          <span className={isShelfPerfume ? "listing-detail" : "listing-amount"}>{isShelfPerfume ? "On their shelf" : bid ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span>
           {details.length ? <span className="listing-meta">{details.join(" · ")}</span> : null}
         </div>
         {username ? <p className="text-xs text-muted">Offered by @{username}</p> : null}

@@ -61,6 +61,7 @@ model Perfume {
   brand            String?
   name             String
   saleType         String      @default("buy")
+  listingIntent    String      @default("marketplace")
   priceCents       Int
   minBidCents      Int?
   bidEndsAt        DateTime?
@@ -87,6 +88,7 @@ model Perfume {
   @@index([ownerId, status])
   @@index([collectionId])
   @@index([bidEndsAt])
+  @@index([listingIntent, status])
 }
 
 model Pin {

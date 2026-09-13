@@ -13,7 +13,7 @@ import { saveScentShowcaseAction } from "@/actions/profile";
 import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 import { settleExpiredAuctions } from "@/lib/auctions";
 
-export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ username: string }>; searchParams: Promise<{ view?: string; availablePage?: string; bidsPage?: string }> }) {
+export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ username: string }>; searchParams: Promise<{ view?: string; shelfPage?: string; availablePage?: string; bidsPage?: string }> }) {
   const { username } = await params;
   const listingParams = await searchParams;
   const listingView = listingParams.view === "list" ? "list" : "cards";
@@ -52,9 +52,11 @@ export default async function PublicProfilePage({ params, searchParams }: { para
     select: { perfumeId: true, id: true },
   });
   const acceptedBidByPerfume = new Map(acceptedBidRows.map((bid) => [bid.perfumeId, bid.id]));
-  const openBidListings = user.perfumes.filter((perfume) => perfume.status === "published" && isBidListing(perfume.saleType) && !acceptedBidByPerfume.has(perfume.id));
-  const acceptedBidListings = user.perfumes.filter((perfume) => perfume.status === "published" && acceptedBidByPerfume.has(perfume.id));
-  const availablePerfumes = user.perfumes.filter((perfume) => perfume.status === "published" && !isBidListing(perfume.saleType));
+  const shelfPerfumes = user.perfumes.filter((perfume) => perfume.status === "published" && perfume.listingIntent === "collection");
+  const shelfPaging = paginate(shelfPerfumes, readPage(listingParams.shelfPage));
+  const openBidListings = user.perfumes.filter((perfume) => perfume.status === "published" && perfume.listingIntent === "marketplace" && isBidListing(perfume.saleType) && !acceptedBidByPerfume.has(perfume.id));
+  const acceptedBidListings = user.perfumes.filter((perfume) => perfume.status === "published" && perfume.listingIntent === "marketplace" && acceptedBidByPerfume.has(perfume.id));
+  const availablePerfumes = user.perfumes.filter((perfume) => perfume.status === "published" && perfume.listingIntent === "marketplace" && !isBidListing(perfume.saleType));
   const soldPerfumes = user.perfumes.filter((perfume) => perfume.status === "sold");
   const bidHighs = openBidListings.length
     ? await prisma.bid.groupBy({
@@ -64,7 +66,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
       })
     : [];
   const bidStatsByPerfume = Object.fromEntries(bidHighs.map((bid) => [bid.perfumeId, { highest: bid._max.amountCents, count: bid._count.id }]));
-  const availableListings = user.perfumes.filter((perfume) => perfume.status === "published");
+  const availableListings = user.perfumes.filter((perfume) => perfume.status === "published" && perfume.listingIntent === "marketplace");
   const availablePaging = paginate(availablePerfumes, readPage(listingParams.availablePage));
   const bidPaging = paginate(openBidListings, readPage(listingParams.bidsPage));
   const scentShowcase = parseScentShowcase(user.scentShowcase);
@@ -132,6 +134,10 @@ export default async function PublicProfilePage({ params, searchParams }: { para
                 ))}
               </div>
             ) : <EmptyState text="No published collections yet." />}
+          </ProfileSection>
+
+          <ProfileSection title={isOwner ? "My shelf" : `@${user.username}'s shelf`} detail="Collection perfumes" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={shelfPaging.page} pageKey="shelfPage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
+            {shelfPerfumes.length ? <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>{shelfPaging.items.map((perfume) => <div key={perfume.id}><ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />{isOwner ? <OwnerActions targetType="perfume" targetId={perfume.id} pinned={pinIds.has(perfume.id)} editHref={`/me/perfumes/${perfume.id}/edit`} /> : null}</div>)}</div><ProfilePagination username={user.username} pageKey="shelfPage" paging={shelfPaging} view={listingView} /></> : <EmptyState text={isOwner ? "Add a perfume to your shelf to share your collection." : "No shelf perfumes shared yet."} />}
           </ProfileSection>
 
           <ProfileSection title="Available now" detail="Ready to buy" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={availablePaging.page} pageKey="availablePage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
@@ -245,9 +251,10 @@ function EmptyState({ text }: { text: string }) {
 const PROFILE_PAGE_SIZE = 12;
 function readPage(value?: string) { const page = Number(value); return Number.isInteger(page) && page > 0 ? page : 1; }
 function paginate<T>(items: T[], requestedPage: number) { const pageCount = Math.max(1, Math.ceil(items.length / PROFILE_PAGE_SIZE)); const page = Math.min(requestedPage, pageCount); return { items: items.slice((page - 1) * PROFILE_PAGE_SIZE, page * PROFILE_PAGE_SIZE), page, pageCount, count: items.length }; }
-function listingHref(username: string, view: "list" | "cards", pageKey: "availablePage" | "bidsPage", page: number) { return `/u/${username}?view=${view}&${pageKey}=${page}`; }
-function ProfileListingControls({ username, view, page, pageKey }: { username: string; view: "list" | "cards"; page: number; pageKey: "availablePage" | "bidsPage" }) { return <div className="search-view-toggle" aria-label="Listing display"><Link className={view === "list" ? "is-active" : ""} href={listingHref(username, "list", pageKey, page)}>List</Link><Link className={view === "cards" ? "is-active" : ""} href={listingHref(username, "cards", pageKey, page)}>Cards</Link></div>; }
-function ProfilePagination({ username, pageKey, paging, view }: { username: string; pageKey: "availablePage" | "bidsPage"; paging: { page: number; pageCount: number; count: number }; view: "list" | "cards" }) { if (paging.pageCount < 2) return null; const start = (paging.page - 1) * PROFILE_PAGE_SIZE + 1; const end = Math.min(paging.page * PROFILE_PAGE_SIZE, paging.count); return <nav className="listing-pagination" aria-label="Profile listing pages"><span>{start}–{end} of {paging.count}</span><div>{paging.page > 1 ? <Link href={listingHref(username, view, pageKey, paging.page - 1)}>Previous</Link> : <span>Previous</span>}{Array.from({ length: paging.pageCount }, (_, index) => index + 1).map((number) => <Link key={number} className={number === paging.page ? "is-active" : ""} aria-current={number === paging.page ? "page" : undefined} href={listingHref(username, view, pageKey, number)}>{number}</Link>)}{paging.page < paging.pageCount ? <Link href={listingHref(username, view, pageKey, paging.page + 1)}>Next</Link> : <span>Next</span>}</div></nav>; }
+type ProfilePageKey = "shelfPage" | "availablePage" | "bidsPage";
+function listingHref(username: string, view: "list" | "cards", pageKey: ProfilePageKey, page: number) { return `/u/${username}?view=${view}&${pageKey}=${page}`; }
+function ProfileListingControls({ username, view, page, pageKey }: { username: string; view: "list" | "cards"; page: number; pageKey: ProfilePageKey }) { return <div className="search-view-toggle" aria-label="Listing display"><Link className={view === "list" ? "is-active" : ""} href={listingHref(username, "list", pageKey, page)}>List</Link><Link className={view === "cards" ? "is-active" : ""} href={listingHref(username, "cards", pageKey, page)}>Cards</Link></div>; }
+function ProfilePagination({ username, pageKey, paging, view }: { username: string; pageKey: ProfilePageKey; paging: { page: number; pageCount: number; count: number }; view: "list" | "cards" }) { if (paging.pageCount < 2) return null; const start = (paging.page - 1) * PROFILE_PAGE_SIZE + 1; const end = Math.min(paging.page * PROFILE_PAGE_SIZE, paging.count); return <nav className="listing-pagination" aria-label="Profile listing pages"><span>{start}–{end} of {paging.count}</span><div>{paging.page > 1 ? <Link href={listingHref(username, view, pageKey, paging.page - 1)}>Previous</Link> : <span>Previous</span>}{Array.from({ length: paging.pageCount }, (_, index) => index + 1).map((number) => <Link key={number} className={number === paging.page ? "is-active" : ""} aria-current={number === paging.page ? "page" : undefined} href={listingHref(username, view, pageKey, number)}>{number}</Link>)}{paging.page < paging.pageCount ? <Link href={listingHref(username, view, pageKey, paging.page + 1)}>Next</Link> : <span>Next</span>}</div></nav>; }
 function ProfilePerfumeDisplay({ perfume, view, username, showStatus }: { perfume: Parameters<typeof PerfumeCard>[0]["perfume"]; view: "list" | "cards"; username: string; showStatus: boolean }) {
   if (view === "cards") return <PerfumeCard perfume={perfume} href={`/p/${perfume.id}`} showStatus={showStatus} />;
   const amount = listingAmountCents(perfume);

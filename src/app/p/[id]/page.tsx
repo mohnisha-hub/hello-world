@@ -45,6 +45,7 @@ export default async function PerfumePage({
   const completion = perfumeCompletion(perfume);
   const amount = listingAmountCents(perfume);
   const bidListing = isBidListing(perfume.saleType);
+  const shelfPerfume = perfume.listingIntent === "collection";
   const wish = session?.user?.id
     ? await prisma.wishlistItem.findUnique({
         where: {
@@ -88,14 +89,14 @@ export default async function PerfumePage({
         ) : null}
         <div className="flex flex-wrap items-center gap-3">
           <div><p className="eyebrow">{perfume.brand || "Perfume"}</p><h1 className="text-4xl">{perfume.name}</h1></div>
-          <SaleBadge saleType={perfume.saleType} />
+          {shelfPerfume ? <span className="badge">On collector&apos;s shelf</span> : <SaleBadge saleType={perfume.saleType} />}
           <StatusBadge status={perfume.status} />
         </div>
-        <p className="text-2xl">
+        {!shelfPerfume ? <p className="text-2xl">
           {bidListing ? `Minimum bid ${formatMoney(amount)}` : formatMoney(amount)}
           {perfume.ml ? ` · ${perfume.ml} ml · ${formatPricePerMl(amount, perfume.ml)}` : ""}
-        </p>
-        <p className="text-sm text-muted">{perfume.unitsAvailable} unit{perfume.unitsAvailable === 1 ? "" : "s"} available</p>
+        </p> : <p className="text-sm text-muted">Part of @{perfume.owner.username}&apos;s public collection.</p>}
+        {!shelfPerfume ? <p className="text-sm text-muted">{perfume.unitsAvailable} unit{perfume.unitsAvailable === 1 ? "" : "s"} available</p> : null}
         {bidListing ? <p className="text-sm">{highest ? `Current highest bid: ${formatMoney(highest.amountCents)}${isOwner ? ` from @${highest.bidder.username}` : ""}` : "No bids yet."} · {openBids.length} bid{openBids.length === 1 ? "" : "s"} received{perfume.bidEndsAt ? ` · ${bidEnded ? "Bidding ended" : `Ends ${perfume.bidEndsAt.toLocaleString()}`}` : ""}</p> : null}
         {perfume.catalogRating != null ? (
           <p className="text-sm">Community rating {perfume.catalogRating.toFixed(1)} / 5</p>
@@ -141,10 +142,10 @@ export default async function PerfumePage({
           </ul>
         ) : null}
         {isOwner ? <p className="text-sm text-muted">Completion {completion.percent}%</p> : null}
-        {!session?.user && perfume.status === "published" && !isOwner ? (
+        {!shelfPerfume && !session?.user && perfume.status === "published" && !isOwner ? (
           <GuestAuthCta from={`/p/${id}`} action={bidListing ? "wishlist or bid" : "wishlist or buy"} />
         ) : null}
-        {session?.user && !isOwner && perfume.status === "published" ? (
+        {session?.user && !isOwner && perfume.status === "published" && !shelfPerfume ? (
           <div className="space-y-3">
             <form action={wishlistForm}>
               <input type="hidden" name="targetType" value="perfume" />
@@ -218,7 +219,7 @@ export default async function PerfumePage({
             <Link className="btn btn-ghost" href={`/me/perfumes/${id}/edit`}>
               Edit
             </Link>
-            {perfume.status === "published" && !acceptedBid ? (
+            {perfume.status === "published" && !acceptedBid && !shelfPerfume ? (
               <form action={soldForm}>
                 <input type="hidden" name="id" value={id} />
                 <button className="btn" type="submit">

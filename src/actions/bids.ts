@@ -36,6 +36,7 @@ export async function placeBidAction(formData: FormData) {
   await settleExpiredAuctions();
   const perfume = await prisma.perfume.findUnique({ where: { id: perfumeId } });
   if (!perfume || perfume.status !== "published") return { error: "This listing is not open." };
+  if (perfume.listingIntent !== "marketplace") return { error: "This perfume is shared from a collector's shelf, not listed for sale." };
   if (perfume.ownerId === user.id) return { error: "You cannot bid on your own perfume." };
   if (!isBidListing(perfume.saleType)) return { error: "This perfume is buy-only." };
   if (perfume.bidEndsAt && perfume.bidEndsAt <= new Date()) return { error: "Bidding for this perfume has ended." };
@@ -83,6 +84,7 @@ export async function buyPerfumeAction(formData: FormData) {
     include: { owner: true },
   });
   if (!perfume || perfume.status !== "published") return { error: "This listing is not for sale." };
+  if (perfume.listingIntent !== "marketplace") return { error: "This perfume is shared from a collector's shelf, not listed for sale." };
   if (perfume.ownerId === user.id) return { error: "You cannot buy your own perfume." };
   if (isBidListing(perfume.saleType)) return { error: "This perfume is open for bids, not buy-now." };
 

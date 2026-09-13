@@ -8,6 +8,7 @@ export default async function ExplorePage() {
     prisma.perfume.findMany({
       where: {
         status: "published",
+        listingIntent: "marketplace",
         owner: { profileStatus: "published" },
         OR: [{ collectionId: null }, { collection: { status: { in: ["published", "sold"] } } }],
       },

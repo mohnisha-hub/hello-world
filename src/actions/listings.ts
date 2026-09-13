@@ -104,19 +104,20 @@ export async function savePerfumeAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const brand = String(formData.get("brand") ?? "").trim() || null;
   const name = String(formData.get("name") ?? "").trim();
+  const listingIntent = String(formData.get("listingIntent") ?? "marketplace") === "collection" ? "collection" : "marketplace";
   const acceptBids = formData.get("acceptBids") === "on" || formData.get("acceptBids") === "true";
-  const saleType = acceptBids ? "bid" : "buy";
+  const saleType = listingIntent === "collection" ? "collection" : acceptBids ? "bid" : "buy";
   const priceCents = rupeesToPaise(String(formData.get("price") ?? ""));
   const minBidCents = rupeesToPaise(String(formData.get("minBid") ?? ""));
   if (!name) return { error: "Name is required." };
-  if (saleType === "buy" && priceCents == null) return { error: "Enter a buy price in INR." };
-  if (saleType === "bid" && (minBidCents == null || minBidCents <= 0)) {
+  if (listingIntent === "marketplace" && saleType === "buy" && priceCents == null) return { error: "Enter a buy price in INR." };
+  if (listingIntent === "marketplace" && saleType === "bid" && (minBidCents == null || minBidCents <= 0)) {
     return { error: "Enter a minimum bid in INR." };
   }
   const durationValue = Number(String(formData.get("bidDuration") ?? ""));
   const durationUnit = String(formData.get("bidDurationUnit") ?? "hours");
   const durationHours = durationUnit === "days" ? durationValue * 24 : durationValue;
-  if (saleType === "bid" && (!Number.isInteger(durationValue) || durationValue < 1 || durationHours > 24 * 30)) {
+  if (listingIntent === "marketplace" && saleType === "bid" && (!Number.isInteger(durationValue) || durationValue < 1 || durationHours > 24 * 30)) {
     return { error: "Set a bid duration from 1 hour to 30 days." };
   }
 
@@ -131,15 +132,15 @@ export async function savePerfumeAction(formData: FormData) {
   }
 
   const kind = String(formData.get("kind") ?? "");
-  if (!new Set(["retail", "tester", "partial", "decant"]).has(kind)) {
+  if (listingIntent === "marketplace" && !new Set(["retail", "tester", "partial", "decant"]).has(kind)) {
     return { error: "Choose Retail, Tester, Partial, or Decant." };
   }
   const fill = null;
   const mlRaw = String(formData.get("ml") ?? "").trim();
   const ml = mlRaw ? Number(mlRaw) : null;
-  if (ml == null || !Number.isFinite(ml) || ml <= 0) return { error: "Enter the perfume volume in millilitres." };
+  if (listingIntent === "marketplace" && (ml == null || !Number.isFinite(ml) || ml <= 0)) return { error: "Enter the perfume volume in millilitres." };
   const unitsAvailable = Number(String(formData.get("unitsAvailable") ?? "1"));
-  if (!Number.isInteger(unitsAvailable) || unitsAvailable < 1) return { error: "Enter at least one available unit." };
+  if (listingIntent === "marketplace" && (!Number.isInteger(unitsAvailable) || unitsAvailable < 1)) return { error: "Enter at least one available unit." };
   const shippingIncluded = formData.getAll("shippingIncluded").map(String).includes("true");
   const description = String(formData.get("description") ?? "").trim() || null;
   const topNotes = String(formData.get("topNotes") ?? "").trim() || null;
@@ -159,6 +160,10 @@ export async function savePerfumeAction(formData: FormData) {
   const uploaded = upload.url;
 
   const existing = id ? await prisma.perfume.findFirst({ where: { id, ownerId: user.id } }) : null;
+  if (existing && listingIntent === "collection" && isBidListing(existing.saleType)) {
+    const openBids = await prisma.bid.count({ where: { perfumeId: existing.id, kind: "bid", status: "open" } });
+    if (openBids) return { error: "This listing has open bids. Settle or decline them before moving it to your shelf." };
+  }
   if (existing && saleType === "buy" && isBidListing(existing.saleType)) {
     const openBids = await prisma.bid.count({
       where: { perfumeId: existing.id, kind: "bid", status: "open" },
@@ -179,15 +184,16 @@ export async function savePerfumeAction(formData: FormData) {
     brand,
     name,
     saleType,
-    priceCents: saleType === "buy" ? priceCents! : minBidCents!,
+    listingIntent,
+    priceCents: listingIntent === "collection" ? 0 : saleType === "buy" ? priceCents! : minBidCents!,
     minBidCents: saleType === "bid" ? minBidCents! : null,
     bidEndsAt,
     collectionId,
-    kind,
+    kind: kind || null,
     fill,
     ml: ml != null && Number.isFinite(ml) ? ml : null,
-    unitsAvailable,
-    shippingIncluded,
+    unitsAvailable: listingIntent === "collection" ? 1 : unitsAvailable,
+    shippingIncluded: listingIntent === "collection" ? null : shippingIncluded,
     description,
     topNotes,
     middleNotes,
