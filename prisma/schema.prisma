@@ -35,6 +35,8 @@ model User {
   ratingsGiven    Rating[]       @relation("Rater")
   ratingsReceived Rating[]       @relation("SellerRated")
   notifications   Notification[] @relation("NotificationRecipient")
+  scentHeartsGiven ScentHeart[] @relation("ScentHeartGiven")
+  scentHeartsReceived ScentHeart[] @relation("ScentHeartReceived")
 }
 
 model Collection {
@@ -176,4 +178,18 @@ model Notification {
   createdAt   DateTime @default(now())
 
   @@index([recipientId, createdAt])
+}
+
+model ScentHeart {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("ScentHeartGiven", fields: [userId], references: [id], onDelete: Cascade)
+  profileId String
+  profile   User     @relation("ScentHeartReceived", fields: [profileId], references: [id], onDelete: Cascade)
+  slot      String
+  perfumeId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, profileId, slot])
+  @@index([profileId, slot])
 }

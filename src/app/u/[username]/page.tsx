@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { bidForm, deletePerfumeForm, pinForm, soldForm } from "@/actions/form-wrappers";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { formatMoney } from "@/lib/money";
-import { saveScentShowcaseAction } from "@/actions/profile";
+import { saveScentShowcaseAction, togglePodiumAction, toggleScentHeartAction } from "@/actions/profile";
 import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 import { settleExpiredAuctions } from "@/lib/auctions";
 
@@ -80,6 +80,9 @@ export default async function PublicProfilePage({ params, searchParams }: { para
     const perfume = perfumeId ? showcasePerfumes.get(perfumeId) : null;
     return perfume ? [{ key, label, perfume }] : [];
   });
+  const scentHearts = await prisma.scentHeart.findMany({ where: { profileId: user.id }, select: { slot: true, userId: true } });
+  const heartCounts = Object.fromEntries(scentHearts.reduce((counts, heart) => counts.set(heart.slot, (counts.get(heart.slot) ?? 0) + 1), new Map<string, number>()));
+  const heartedSlots = new Set(scentHearts.filter((heart) => heart.userId === session?.user?.id).map((heart) => heart.slot));
   const selectableShowcasePerfumes = [...showcasePerfumes.values()].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
@@ -124,7 +127,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
       ) : null}
       <div className="profile-layout">
         <main className="profile-content">
-          {topThree.length ? <TopThree perfumes={topThree} username={user.username} /> : null}
+          {topThree.length ? <TopThree perfumes={topThree} username={user.username} profileId={user.id} heartCounts={heartCounts} heartedSlots={heartedSlots} canHeart={Boolean(session?.user?.id && !isOwner)} /> : null}
 
           <ProfileSection title="Collections" detail="Curated shelves" tools={isOwner ? <SectionTools addHref="/me/collections/new" editHref="/me/collections" addLabel="Add collection" editLabel="Edit collections" /> : null}>
             {liveCollections.length ? (
@@ -140,7 +143,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
           </ProfileSection>
 
           <ProfileSection title={isOwner ? "My shelf" : `@${user.username}'s shelf`} detail="Collection perfumes" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={shelfPaging.page} pageKey="shelfPage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
-            {shelfPerfumes.length ? <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>{shelfPaging.items.map((perfume) => <div key={perfume.id}><ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />{isOwner ? <OwnerActions targetType="perfume" targetId={perfume.id} pinned={pinIds.has(perfume.id)} editHref={`/me/perfumes/${perfume.id}/edit`} /> : null}</div>)}</div><ProfilePagination username={user.username} pageKey="shelfPage" paging={shelfPaging} view={listingView} /></> : <EmptyState text={isOwner ? "Add a perfume to your shelf to share your collection." : "No shelf perfumes shared yet."} />}
+            {shelfPerfumes.length ? <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>{shelfPaging.items.map((perfume) => <div key={perfume.id}><ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />{isOwner ? <OwnerActions targetType="perfume" targetId={perfume.id} pinned={pinIds.has(perfume.id)} editHref={`/me/perfumes/${perfume.id}/edit`} curated={scentShowcase.top3.includes(perfume.id)} canCurate={scentShowcase.top3.length < 3} /> : null}</div>)}</div><ProfilePagination username={user.username} pageKey="shelfPage" paging={shelfPaging} view={listingView} /></> : <EmptyState text={isOwner ? "Add a perfume to your shelf to share your collection." : "No shelf perfumes shared yet."} />}
           </ProfileSection>
 
           <ProfileSection title="Available now" detail="Ready to buy" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={availablePaging.page} pageKey="availablePage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
@@ -202,7 +205,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
           {isOwner || scentRoles.length ? (
             <section className="scent-profile-panel">
               <div className="mb-3"><p className="eyebrow">SCENT PROFILE</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My scent profile" : `@${user.username}'s picks`}</h2></div>
-              {scentRoles.length ? <div className="scent-role-list">{scentRoles.map(({ key, label, perfume }) => <ScentRoleCard key={key} label={label} perfume={perfume} username={user.username} />)}</div> : null}
+              {scentRoles.length ? <div className="scent-role-list">{scentRoles.map(({ key, label, perfume }) => <ScentRoleCard key={key} slot={key} label={label} perfume={perfume} username={user.username} profileId={user.id} heartCount={heartCounts[key] ?? 0} hearted={heartedSlots.has(key)} canHeart={Boolean(session?.user?.id && !isOwner)} />)}</div> : null}
               {isOwner ? <ScentProfileEditor perfumes={selectableShowcasePerfumes} topThree={scentShowcase.top3} slots={scentShowcase.slots} /> : null}
               {!isOwner && !scentRoles.length ? null : null}
             </section>
@@ -232,12 +235,16 @@ function NewCollectorGuide({ profilePublished }: { profilePublished: boolean }) 
   </section>;
 }
 
-function TopThree({ perfumes, username }: { perfumes: { id: string; name: string; brand: string | null; imageUrl: string | null }[]; username: string }) {
-  return <section className="top-three"><div className="mb-4"><p className="eyebrow">THE PODIUM</p><h2 className="section-heading">Top 3 perfumes</h2></div><div className="top-three-grid">{perfumes.map((perfume, index) => <Link key={perfume.id} href={`/p/${perfume.id}`} className={`top-three-card top-three-rank-${index + 1}`}><span className="top-three-rank">0{index + 1}</span><span><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{username}</em></span></Link>)}</div></section>;
+function TopThree({ perfumes, username, profileId, heartCounts, heartedSlots, canHeart }: { perfumes: { id: string; name: string; brand: string | null; imageUrl: string | null }[]; username: string; profileId: string; heartCounts: Record<string, number>; heartedSlots: Set<string>; canHeart: boolean }) {
+  return <section className="top-three"><div className="mb-4"><p className="eyebrow">THE PODIUM</p><h2 className="section-heading">Top 3 perfumes</h2></div><div className="top-three-grid">{perfumes.map((perfume, index) => { const slot = `top${index + 1}`; return <div key={perfume.id} className={`top-three-card top-three-rank-${index + 1}`}><Link href={`/p/${perfume.id}`}><span className="top-three-rank">0{index + 1}</span><span><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{username}</em></span></Link><ScentHeartButton profileId={profileId} perfumeId={perfume.id} slot={slot} count={heartCounts[slot] ?? 0} hearted={heartedSlots.has(slot)} canHeart={canHeart} /></div>; })}</div></section>;
 }
 
-function ScentRoleCard({ label, perfume, username }: { label: string; perfume: { id: string; name: string; brand: string | null }; username: string }) {
-  return <Link href={`/p/${perfume.id}`} className="scent-role-card"><span>{label}</span><strong>{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</strong><small>@{username} ↗</small></Link>;
+function ScentRoleCard({ slot, label, perfume, username, profileId, heartCount, hearted, canHeart }: { slot: string; label: string; perfume: { id: string; name: string; brand: string | null }; username: string; profileId: string; heartCount: number; hearted: boolean; canHeart: boolean }) {
+  return <div className="scent-role-card"><Link href={`/p/${perfume.id}`}><span>{label}</span><strong>{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</strong><small>@{username} ↗</small></Link><ScentHeartButton profileId={profileId} perfumeId={perfume.id} slot={slot} count={heartCount} hearted={hearted} canHeart={canHeart} /></div>;
+}
+
+function ScentHeartButton({ profileId, perfumeId, slot, count, hearted, canHeart }: { profileId: string; perfumeId: string; slot: string; count: number; hearted: boolean; canHeart: boolean }) {
+  return <form action={toggleScentHeartAction} className="scent-heart"><input type="hidden" name="profileId" value={profileId} /><input type="hidden" name="perfumeId" value={perfumeId} /><input type="hidden" name="slot" value={slot} /><button type="submit" disabled={!canHeart} aria-label={hearted ? "Remove heart" : "Heart this pick"} aria-pressed={hearted} className={hearted ? "is-hearted" : ""}>♥ <span>{count || ""}</span></button></form>;
 }
 
 function ScentProfileEditor({ perfumes, topThree, slots }: { perfumes: { id: string; name: string; brand: string | null }[]; topThree: string[]; slots: Record<string, string | undefined> }) {
@@ -271,12 +278,13 @@ function ProfilePagination({ username, pageKey, paging, view }: { username: stri
 function ProfilePerfumeDisplay({ perfume, view, username, showStatus }: { perfume: Parameters<typeof PerfumeCard>[0]["perfume"]; view: "list" | "cards"; username: string; showStatus: boolean }) {
   if (view === "cards") return <PerfumeCard perfume={perfume} href={`/p/${perfume.id}`} showStatus={showStatus} />;
   const amount = listingAmountCents(perfume);
+  const shelfPerfume = perfume.listingIntent === "collection";
   return <Link href={`/p/${perfume.id}`} className="search-listing">
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img src={perfume.imageUrl || "/atelier/atelier-perfume-cover.png"} alt="" />
     <span className="search-listing-copy"><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{username}</em></span>
-    <span className="search-listing-details">{perfume.kind ? `${perfume.kind} · ` : ""}{perfume.ml ? `${perfume.ml} ml` : ""}</span>
-    <span className="search-listing-price">{isBidListing(perfume.saleType) ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span><span className="listing-live-dot" aria-label="Available" />
+    <span className="search-listing-details">{shelfPerfume ? "On their shelf" : `${perfume.kind ? `${perfume.kind} · ` : ""}${perfume.ml ? `${perfume.ml} ml` : ""}`}</span>
+    {!shelfPerfume ? <><span className="search-listing-price">{isBidListing(perfume.saleType) ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span><span className="listing-live-dot" aria-label="Available" /></> : null}
   </Link>;
 }
 
@@ -284,6 +292,6 @@ function WishlistMiniCard({ href, title, meta }: { href: string; title: string; 
   return <Link href={href} className="block rounded-lg border border-line px-3 py-2.5 transition-colors hover:border-line-strong hover:bg-bg"><p className="line-clamp-1 text-sm font-medium">{title}</p><p className="mt-0.5 text-xs text-muted">{meta}</p></Link>;
 }
 
-function OwnerActions({ targetType, targetId, pinned, editHref, canSell }: { targetType: "collection" | "perfume"; targetId: string; pinned: boolean; editHref: string; canSell?: boolean }) {
-  return <div className="profile-owner-actions"><Link className="card-action" href={editHref}>Edit</Link><form action={pinForm}><input type="hidden" name="targetType" value={targetType} /><input type="hidden" name="targetId" value={targetId} /><button className="card-action" type="submit">{pinned ? "Unpin" : "Pin"}</button></form>{canSell ? <><form action={soldForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Mark sold</button></form><form action={deletePerfumeForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Delete</button></form></> : null}</div>;
+function OwnerActions({ targetType, targetId, pinned, editHref, canSell, curated, canCurate }: { targetType: "collection" | "perfume"; targetId: string; pinned: boolean; editHref: string; canSell?: boolean; curated?: boolean; canCurate?: boolean }) {
+  return <div className="profile-owner-actions"><Link className="card-action" href={editHref}>Edit</Link>{targetType === "perfume" && (curated || canCurate) ? <form action={togglePodiumAction}><input type="hidden" name="perfumeId" value={targetId} /><button className="card-action" type="submit">{curated ? "Remove from Podium" : "Move to Podium"}</button></form> : null}<form action={pinForm}><input type="hidden" name="targetType" value={targetType} /><input type="hidden" name="targetId" value={targetId} /><button className="card-action" type="submit">{pinned ? "Unpin" : "Pin"}</button></form>{canSell ? <><form action={soldForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Mark sold</button></form><form action={deletePerfumeForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Delete</button></form></> : null}</div>;
 }

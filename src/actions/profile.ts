@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/listings";
 import { getSessionUser } from "@/lib/acting";
 import { trySaveUpload } from "@/lib/upload";
 import { suggestedAvatar } from "@/lib/photos";
-import { SCENT_PROFILE_SLOTS } from "@/lib/showcase";
+import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
@@ -127,4 +127,39 @@ export async function saveScentShowcaseAction(formData: FormData) {
   );
   await prisma.user.update({ where: { id: user.id }, data: { scentShowcase: JSON.stringify({ top3, slots }) } });
   revalidatePath(`/u/${user.username}`);
+}
+
+export async function togglePodiumAction(formData: FormData) {
+  const user = await requireUser();
+  const perfumeId = String(formData.get("perfumeId") ?? "");
+  const perfume = await prisma.perfume.findFirst({ where: { id: perfumeId, ownerId: user.id, status: "published", listingIntent: "collection" }, select: { id: true } });
+  if (!perfume) return;
+  const current = await prisma.user.findUnique({ where: { id: user.id }, select: { scentShowcase: true } });
+  const showcase = parseScentShowcase(current?.scentShowcase);
+  const top3 = showcase.top3.includes(perfumeId)
+    ? showcase.top3.filter((id) => id !== perfumeId)
+    : showcase.top3.length < 3 ? [...showcase.top3, perfumeId] : showcase.top3;
+  await prisma.user.update({ where: { id: user.id }, data: { scentShowcase: JSON.stringify({ ...showcase, top3 }) } });
+  revalidatePath(`/u/${user.username}`);
+}
+
+export async function toggleScentHeartAction(formData: FormData) {
+  const user = await requireUser();
+  const profileId = String(formData.get("profileId") ?? "");
+  const perfumeId = String(formData.get("perfumeId") ?? "");
+  const slot = String(formData.get("slot") ?? "");
+  if (!profileId || !perfumeId || !slot || profileId === user.id) return;
+  const profile = await prisma.user.findUnique({ where: { id: profileId }, select: { username: true, scentShowcase: true, profileStatus: true } });
+  if (!profile || profile.profileStatus !== "published") return;
+  const showcase = parseScentShowcase(profile.scentShowcase);
+  const roleSlots = new Set(SCENT_PROFILE_SLOTS.map(([key]) => key));
+  const topIndex = Number(slot.slice(3));
+  if (!slot.startsWith("top") && !roleSlots.has(slot as (typeof SCENT_PROFILE_SLOTS)[number][0])) return;
+  if (slot.startsWith("top") && (!Number.isInteger(topIndex) || topIndex < 1 || topIndex > 3)) return;
+  const selected = slot.startsWith("top") ? showcase.top3[topIndex - 1] : showcase.slots[slot as keyof typeof showcase.slots];
+  if (selected !== perfumeId) return;
+  const existing = await prisma.scentHeart.findUnique({ where: { userId_profileId_slot: { userId: user.id, profileId, slot } } });
+  if (existing) await prisma.scentHeart.delete({ where: { id: existing.id } });
+  else await prisma.scentHeart.create({ data: { userId: user.id, profileId, slot, perfumeId } });
+  revalidatePath(`/u/${profile.username}`);
 }
