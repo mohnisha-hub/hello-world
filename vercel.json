@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "sh scripts/vercel-build.sh",
-  "crons": [{ "path": "/api/cron/settle-auctions", "schedule": "0 * * * *" }]
+  "crons": [{ "path": "/api/cron/settle-auctions", "schedule": "0 0 * * *" }]
 }
