@@ -29,6 +29,11 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
   const [view, setView] = useState<"list" | "cards">("list");
   const [page, setPage] = useState(1);
   useEffect(() => { setQuery(requestedQuery); }, [requestedQuery]);
+  const matchedUsers = useMemo(() => {
+    const term = query.trim().toLowerCase().replace(/^@/, "");
+    if (!term) return [];
+    return allUsers.filter((user) => user.username.toLowerCase().includes(term)).slice(0, 6);
+  }, [allUsers, query]);
   const brands = useMemo(() => Array.from(new Set(perfumes.map((p) => p.brand).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
   const locations = useMemo(() => Array.from(new Set(perfumes.map((p) => p.owner.location).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
   const matchedPerfumes = useMemo(() => {
@@ -70,6 +75,7 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
         <SearchSelect label="Location" value={location} onChange={setLocation}><option value="all">Anywhere</option>{locations.map((o) => <option key={o} value={o}>{o}</option>)}</SearchSelect>
       </div>
     </div>
+    {matchedUsers.length ? <section className="collector-search-results" aria-label="Matching collectors"><div><p className="eyebrow">COLLECTORS</p><h2>People matching “{query.trim()}”</h2></div><div className="collector-search-grid">{matchedUsers.map((user) => <Link key={user.id} href={`/u/${user.username}`}><span className="collector-search-avatar" aria-hidden="true">{user.username.slice(0, 1).toUpperCase()}</span><span><strong>@{user.username}</strong><small>{user.location || "Somewhere scented"}</small></span><b>View profile →</b></Link>)}</div></section> : null}
     {!hasFilters && collections.length ? <details className="search-collectors search-collections-collapsible"><summary>Live collections <span>({collections.length})</span></summary><div className="search-collection-group search-collection-strip">{collections.slice(0, 6).map((c) => <Link key={c.id} href={`/u/${c.owner.username}/c/${c.id}`}><span>{c.name}</span><small>@{c.owner.username} · {c.perfumeCount} perfumes</small><b>↗</b></Link>)}</div></details> : null}
     <section className="search-results">
       <div className="search-results-heading"><div><p className="eyebrow">MARKETPLACE</p><h2>{matchedPerfumes.length} listing{matchedPerfumes.length === 1 ? "" : "s"}</h2></div><div className="search-result-tools"><label className="search-sort">Sort<select value={sort} onChange={(event) => setSort(event.target.value as Sort)}><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="per-ml-low">Price/ml: low to high</option><option value="per-ml-high">Price/ml: high to low</option></select></label><div className="search-view-toggle"><button type="button" className={view === "list" ? "is-active" : ""} onClick={() => setView("list")}>List</button><button type="button" className={view === "cards" ? "is-active" : ""} onClick={() => setView("cards")}>Cards</button></div></div></div>

@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { PerfumeFinder } from "@/components/PerfumeFinder";
 
 export default async function ExplorePage() {
-  const [perfumes, collections, session] = await Promise.all([
+  const [perfumes, collections, allUsers, session] = await Promise.all([
     prisma.perfume.findMany({
       where: {
         status: "published",
@@ -22,10 +22,16 @@ export default async function ExplorePage() {
       include: { owner: true, perfumes: { where: { status: "published" } } },
       orderBy: { publishedAt: "desc" },
     }),
+    prisma.user.findMany({
+      where: { profileStatus: "published" },
+      select: { id: true, username: true, photoUrl: true, location: true, bio: true, profileStatus: true },
+      orderBy: { updatedAt: "desc" },
+      take: 100,
+    }),
     auth(),
   ]);
-  const users = Array.from(new Map(perfumes.map((p) => [p.owner.id, p.owner])).values());
-  const ratingRows = await Promise.all(users.map(async (user) => [user.id, await sellerRating(user.id)] as const));
+  const marketplaceUsers = Array.from(new Map(perfumes.map((p) => [p.owner.id, p.owner])).values());
+  const ratingRows = await Promise.all(marketplaceUsers.map(async (user) => [user.id, await sellerRating(user.id)] as const));
   const ratingMap = Object.fromEntries(ratingRows);
 
   return (
@@ -44,7 +50,7 @@ export default async function ExplorePage() {
         <h2 className="mt-1 font-serif text-3xl sm:text-4xl">Live bottles and active bids.</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Browse what collectors are ready to pass on, then narrow by house, note, type, size, price, or location.</p>
       </div>
-      <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={users} ratingMap={ratingMap} />
+      <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={allUsers} ratingMap={ratingMap} />
     </div>
   );
 }
