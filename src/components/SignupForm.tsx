@@ -4,12 +4,21 @@ import { useState } from "react";
 import Link from "next/link";
 import { googleLoginAction, signupAction } from "@/actions/auth";
 
+const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*[0-9]).{8,}$/;
+
 export function SignupForm({ from, setupError, googleEnabled }: { from: string; setupError?: string | null; googleEnabled: boolean }) {
   const [error, setError] = useState<string | null>(setupError ?? null);
+  const [password, setPassword] = useState("");
+  const passwordValid = PASSWORD_RE.test(password);
   return (
     <form
       className="auth-form mx-auto max-w-md"
       action={async (fd) => {
+        const submittedPassword = String(fd.get("password") ?? "");
+        if (!PASSWORD_RE.test(submittedPassword)) {
+          setError("Use at least 8 characters, including a letter and a number.");
+          return;
+        }
         const res = await signupAction(fd);
         if (res?.error) setError(res.error);
       }}
@@ -24,9 +33,9 @@ export function SignupForm({ from, setupError, googleEnabled }: { from: string; 
       </label>
       <label className="field">
         Password
-        <input name="password" type="password" required minLength={8} pattern="(?=.*[A-Za-z])(?=.*\\d).{8,}" title="At least 8 characters, including a letter and a number." autoComplete="new-password" />
+        <input name="password" type="password" required minLength={8} value={password} onChange={(event) => { setPassword(event.target.value); setError(null); }} aria-describedby="password-help" aria-invalid={password.length > 0 && !passwordValid} autoComplete="new-password" />
       </label>
-      <p className="auth-password-help" title="At least 8 characters, including a letter and a number.">Use 8+ characters with a letter and a number.</p>
+      <p id="password-help" className="auth-password-help">{password.length > 0 && passwordValid ? "✓ Password looks good." : "Use 8+ characters with a letter and a number."}</p>
       <div className="auth-actions"><button className="btn" type="submit">Create account</button>
       {googleEnabled ? (
         <button className="btn btn-ghost auth-google-button" formAction={googleLoginAction} formNoValidate type="submit">

@@ -15,7 +15,7 @@ import { DATABASE_UNAVAILABLE, isDatabaseConfigured } from "@/lib/db";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
-const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*[0-9]).{8,}$/;
 
 function normalizedUsername(value: FormDataEntryValue | null) {
   return String(value ?? "").trim().toLowerCase();
