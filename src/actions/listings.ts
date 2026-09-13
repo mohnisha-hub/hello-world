@@ -132,6 +132,8 @@ export async function savePerfumeAction(formData: FormData) {
   const mlRaw = String(formData.get("ml") ?? "").trim();
   const ml = mlRaw ? Number(mlRaw) : null;
   if (ml == null || !Number.isFinite(ml) || ml <= 0) return { error: "Enter the perfume volume in millilitres." };
+  const unitsAvailable = Number(String(formData.get("unitsAvailable") ?? "1"));
+  if (!Number.isInteger(unitsAvailable) || unitsAvailable < 1) return { error: "Enter at least one available unit." };
   const shippingIncluded = formData.getAll("shippingIncluded").map(String).includes("true");
   const description = String(formData.get("description") ?? "").trim() || null;
   const topNotes = String(formData.get("topNotes") ?? "").trim() || null;
@@ -172,6 +174,7 @@ export async function savePerfumeAction(formData: FormData) {
     kind,
     fill,
     ml: ml != null && Number.isFinite(ml) ? ml : null,
+    unitsAvailable,
     shippingIncluded,
     description,
     topNotes,
@@ -322,15 +325,12 @@ export async function markPerfumeSoldAction(formData: FormData) {
   const id = String(formData.get("id"));
   const perfume = await prisma.perfume.findFirst({ where: { id, ownerId: user.id } });
   if (!perfume) return { error: "Not found." };
-  await prisma.perfume.update({
-    where: { id },
-    data: { status: "sold", soldAt: new Date() },
-  });
-  await prisma.bid.updateMany({
-    where: { perfumeId: id, status: { in: ["open", "accepted"] } },
-    data: { status: "archived" },
-  });
-  await syncCollectionStatus(perfume.collectionId);
+  const remaining = Math.max(0, perfume.unitsAvailable - 1);
+  await prisma.perfume.update({ where: { id }, data: { unitsAvailable: remaining, ...(remaining === 0 ? { status: "sold", soldAt: new Date() } : {}) } });
+  if (remaining === 0) {
+    await prisma.bid.updateMany({ where: { perfumeId: id, status: { in: ["open", "accepted"] } }, data: { status: "archived" } });
+    await syncCollectionStatus(perfume.collectionId);
+  }
   revalidateOwner(user.username, [`/p/${id}`]);
 }
 

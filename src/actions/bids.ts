@@ -19,14 +19,6 @@ async function closeOtherBids(perfumeId: string, keepBidId?: string) {
   });
 }
 
-async function markSold(perfumeId: string, collectionId: string | null) {
-  await prisma.perfume.update({
-    where: { id: perfumeId },
-    data: { status: "sold", soldAt: new Date() },
-  });
-  await syncCollectionStatus(collectionId);
-}
-
 function revalidateDeal(username: string, perfumeId: string) {
   revalidatePath("/me/bids");
   revalidatePath("/me/buys");
@@ -110,17 +102,30 @@ export async function buyPerfumeAction(formData: FormData) {
         body: `Buy request for ${perfume.name} at ${formatMoney(perfume.priceCents)}. Listing: /p/${perfume.id}`,
       },
     });
-    await tx.perfume.update({
-      where: { id: perfumeId },
-      data: { status: "sold", soldAt: new Date() },
-    });
     return convo;
   });
-
-  await closeOtherBids(perfumeId);
-  await syncCollectionStatus(perfume.collectionId);
+  await notify(perfume.ownerId, "buy", `New purchase request for ${perfume.name}. Confirm it in the deal chat when fulfilled.`, `/me/messages/${conversation.id}`);
   revalidateDeal(perfume.owner.username, perfumeId);
   redirect(`/me/messages/${conversation.id}`);
+}
+
+export async function markDealSoldAction(formData: FormData) {
+  const user = await requireUser();
+  const conversationId = String(formData.get("conversationId"));
+  const convo = await prisma.conversation.findUnique({ where: { id: conversationId }, include: { bid: { include: { perfume: true, seller: true } } } });
+  if (!convo || convo.bid.sellerId !== user.id) return { error: "Only the seller can mark this deal sold." };
+  if (convo.bid.kind === "bid" && !["accepted", "archived"].includes(convo.bid.status)) return { error: "Accept the bid before marking it sold." };
+  if (convo.bid.status === "archived") return { error: "This deal is already marked sold." };
+  const remaining = Math.max(0, convo.bid.perfume.unitsAvailable - 1);
+  await prisma.$transaction(async (tx) => {
+    await tx.bid.update({ where: { id: convo.bid.id }, data: { status: "archived" } });
+    await tx.perfume.update({ where: { id: convo.bid.perfumeId }, data: { unitsAvailable: remaining, ...(remaining === 0 ? { status: "sold", soldAt: new Date() } : {}) } });
+    await tx.message.create({ data: { conversationId, senderId: user.id, body: remaining === 0 ? "Seller marked this deal sold — the listing is now sold out." : `Seller marked this deal sold — ${remaining} unit${remaining === 1 ? "" : "s"} still available.` } });
+  });
+  if (remaining === 0) { await closeOtherBids(convo.bid.perfumeId); await syncCollectionStatus(convo.bid.perfume.collectionId); }
+  await notify(convo.bid.bidderId, "deal-sold", remaining === 0 ? `${convo.bid.perfume.name} is sold out.` : `Your purchase of ${convo.bid.perfume.name} was marked sold.`, `/me/messages/${conversationId}`);
+  revalidateDeal(convo.bid.seller.username, convo.bid.perfumeId);
+  revalidatePath(`/me/messages/${conversationId}`);
 }
 
 export async function declineBidAction(formData: FormData) {
@@ -166,22 +171,8 @@ export async function acceptBidAction(formData: FormData) {
 }
 
 export async function archiveBidSoldAction(formData: FormData) {
-  const user = await requireUser();
-  const id = String(formData.get("id"));
-  const bid = await prisma.bid.findFirst({
-    where: { id, sellerId: user.id },
-  });
-  if (!bid) return { error: "Bid not found." };
-  await prisma.bid.update({ where: { id }, data: { status: "archived" } });
-  const perfume = await prisma.perfume.findUnique({ where: { id: bid.perfumeId } });
-  if (perfume && perfume.status !== "sold") {
-    await markSold(perfume.id, perfume.collectionId);
-    await closeOtherBids(perfume.id);
-  }
-  revalidatePath("/me/bids");
-  revalidatePath("/me/buys");
-  revalidatePath(`/p/${bid.perfumeId}`);
-  revalidatePath(`/u/${user.username}`);
+  void formData;
+  return { error: "Open the deal chat to mark this sale complete." };
 }
 
 export async function ratePurchaseAction(formData: FormData) {

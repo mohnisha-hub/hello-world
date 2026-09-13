@@ -63,6 +63,7 @@ model Perfume {
   saleType         String      @default("buy")
   priceCents       Int
   minBidCents      Int?
+  unitsAvailable   Int         @default(1)
   imageUrl         String?
   kind             String?
   fill             String?

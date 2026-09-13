@@ -12,7 +12,6 @@ import { Notice } from "@/components/Notice";
 import { GuestAuthCta } from "@/components/GuestAuthCta";
 import {
   acceptBidForm,
-  archiveBidForm,
   bidForm,
   buyForm,
   declineBidForm,
@@ -93,6 +92,7 @@ export default async function PerfumePage({
           {bidListing ? `Minimum bid ${formatMoney(amount)}` : formatMoney(amount)}
           {perfume.ml ? ` · ${perfume.ml} ml · ${formatPricePerMl(amount, perfume.ml)}` : ""}
         </p>
+        <p className="text-sm text-muted">{perfume.unitsAvailable} unit{perfume.unitsAvailable === 1 ? "" : "s"} available</p>
         {bidListing && highest && perfume.status === "published" ? (
           <p className="text-sm">Current highest bid: {formatMoney(highest.amountCents)}{isOwner ? ` from @${highest.bidder.username}` : ""}</p>
         ) : null}
@@ -203,13 +203,7 @@ export default async function PerfumePage({
                       </form>
                     </div>
                   ) : null}
-                  {b.status === "accepted" && perfume.status === "published" ? (
-                    <form action={archiveBidForm}>
-                      <input type="hidden" name="id" value={b.id} />
-                      <button className="btn" type="submit">Close deal & mark sold</button>
-                    </form>
-                  ) : null}
-                  {b.conversation ? <Link href={`/me/messages/${b.conversation.id}`}>Open chat</Link> : null}
+                  {b.conversation ? <Link href={`/me/messages/${b.conversation.id}`}>{b.status === "accepted" ? "Open chat to mark sold" : "Open chat"}</Link> : null}
                 </li>
               ))}
             </ul>

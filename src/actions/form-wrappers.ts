@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import {
   acceptBidAction,
   archiveBidSoldAction,
+  markDealSoldAction,
   buyPerfumeAction,
   declineBidAction,
   placeBidAction,
@@ -78,6 +79,11 @@ export async function messageForm(formData: FormData): Promise<void> {
   if (res && "error" in res && res.error) {
     redirect(withNotice(`/me/messages/${conversationId}`, res.error));
   }
+}
+export async function markDealSoldForm(formData: FormData): Promise<void> {
+  const conversationId = String(formData.get("conversationId"));
+  const res = await markDealSoldAction(formData);
+  if (res && "error" in res && res.error) redirect(withNotice(`/me/messages/${conversationId}`, res.error));
 }
 export async function logoutForm(): Promise<void> {
   await logoutAction();

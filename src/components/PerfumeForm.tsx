@@ -17,6 +17,7 @@ type Perfume = {
   saleType?: string | null;
   priceCents: number;
   minBidCents?: number | null;
+  unitsAvailable?: number;
   imageUrl: string | null;
   kind: string | null;
   fill: string | null;
@@ -303,6 +304,10 @@ export function PerfumeForm({
       <label className="field">
         Millilitres
         <input name="ml" type="number" min="0.1" step="0.1" required value={ml} onChange={(e) => setMl(e.target.value)} />
+      </label>
+      <label className="field">
+        Units available
+        <input name="unitsAvailable" type="number" min="1" step="1" required defaultValue={perfume?.unitsAvailable ?? 1} />
       </label>
       <input type="hidden" name="shippingIncluded" value="false" />
       <label className="flex items-center gap-2 text-sm">

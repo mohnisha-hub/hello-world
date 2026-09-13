@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { messageForm } from "@/actions/form-wrappers";
+import { markDealSoldForm, messageForm } from "@/actions/form-wrappers";
 import { Notice } from "@/components/Notice";
 import { formatMoney } from "@/lib/money";
 
@@ -44,20 +44,21 @@ export default async function ConversationPage({
       </header>
       <Notice message={notice} />
       <Link href={`/p/${convo.bid.perfume.id}`} className="chat-deal-card">
-        <span><strong>{convo.bid.perfume.name}</strong><small>{convo.bid.kind === "buy" ? "Purchase" : "Accepted bid"} · {formatMoney(convo.bid.amountCents)}</small></span>
+        <span><strong>{convo.bid.perfume.name}</strong><small>{convo.bid.kind === "buy" ? "Purchase request" : "Accepted bid"} · {formatMoney(convo.bid.amountCents)} · {convo.bid.perfume.unitsAvailable} unit{convo.bid.perfume.unitsAvailable === 1 ? "" : "s"} available</small></span>
         <span aria-hidden="true">↗</span>
       </Link>
       <ul className="chat-transcript" aria-label="Conversation">
         {convo.messages.map((m) => (
           <li key={m.id} className={`chat-message ${m.senderId === session.user.id ? "chat-message-own" : "chat-message-other"}`}>
             <div className="chat-bubble">
-              {m.senderId !== session.user.id ? <p className="chat-message-sender">@{m.sender.username}</p> : null}
+              <p className="chat-message-sender">@{m.sender.username}{m.senderId === session.user.id ? " · you" : ""}</p>
               <p>{m.body}</p>
               <time>{shortTime(m.createdAt)}</time>
             </div>
           </li>
         ))}
       </ul>
+      {convo.bid.sellerId === session.user.id && chatEnabled && !closedDeal ? <form action={markDealSoldForm} className="chat-fulfilment"><input type="hidden" name="conversationId" value={id} /><span><strong>Fulfil this deal</strong><small>Marks one unit sold. {convo.bid.perfume.unitsAvailable} available before confirmation.</small></span><button className="btn btn-compact" type="submit">Mark one sold</button></form> : null}
       {chatEnabled ? (
         <form action={messageForm} className="chat-composer">
           <input type="hidden" name="conversationId" value={id} />
