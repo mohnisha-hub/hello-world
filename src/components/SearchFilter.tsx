@@ -2,52 +2,83 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, formatPricePerMl } from "@/lib/money";
 import { listingAmountCents, isBidListing } from "@/lib/sale";
 import { searchCollections, searchPerfumesAndGroupUsers, type SearchableCollection, type SearchablePerfume } from "@/lib/search";
 
 const POPULAR_NOTES = ["Vanilla", "Oud", "Santal", "Tobacco", "Saffron", "Cognac", "Honey", "Fig", "Pineapple", "Amber"];
-const FORMATS = ["all", "retail", "tester", "partial", "decant"] as const;
-type Format = (typeof FORMATS)[number];
+const CONDITIONS = ["all", "retail", "tester", "partial", "decant"] as const;
+type Condition = (typeof CONDITIONS)[number];
+type PriceBand = "all" | "under-3000" | "3000-10000" | "10000-25000" | "25000-plus";
+type SizeBand = "all" | "under-10" | "10-30" | "30-75" | "75-plus";
+type Sort = "newest" | "price-low" | "price-high" | "per-ml-low" | "per-ml-high";
 
 export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }: { perfumes: SearchablePerfume[]; collections?: SearchableCollection[]; allUsers: SearchablePerfume["owner"][]; ratingMap: Record<string, { average: number; count: number } | null> }) {
   const [query, setQuery] = useState("");
-  const [format, setFormat] = useState<Format>("all");
+  const [condition, setCondition] = useState<Condition>("all");
   const [listing, setListing] = useState<"all" | "buy" | "bid">("all");
+  const [brand, setBrand] = useState("all");
+  const [location, setLocation] = useState("all");
+  const [size, setSize] = useState<SizeBand>("all");
+  const [price, setPrice] = useState<PriceBand>("all");
+  const [sort, setSort] = useState<Sort>("newest");
   const [view, setView] = useState<"list" | "cards">("list");
-  const active = Boolean(query.trim() || format !== "all" || listing !== "all");
+  const brands = useMemo(() => Array.from(new Set(perfumes.map((p) => p.brand).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
+  const locations = useMemo(() => Array.from(new Set(perfumes.map((p) => p.owner.location).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
   const matchedPerfumes = useMemo(() => {
     const source = query.trim() ? searchPerfumesAndGroupUsers(perfumes, query, ratingMap).flatMap(({ matchingPerfumes }) => matchingPerfumes) : perfumes;
-    return Array.from(new Map(source.map((perfume) => [perfume.id, perfume])).values()).filter((perfume) =>
-      (format === "all" || perfume.kind === format) && (listing === "all" || (listing === "bid" ? isBidListing(perfume.saleType) : !isBidListing(perfume.saleType))),
-    );
-  }, [format, listing, perfumes, query, ratingMap]);
-  const matchedCollections = useMemo(() => query.trim() ? searchCollections(collections, query) : [], [collections, query]);
-  const brands = useMemo(() => Array.from(new Set(matchedPerfumes.map((perfume) => perfume.brand).filter(Boolean))).slice(0, 8) as string[], [matchedPerfumes]);
+    const unique = Array.from(new Map(source.map((p) => [p.id, p])).values());
+    const inPriceBand = (amount: number) => price === "all" || (price === "under-3000" && amount < 300000) || (price === "3000-10000" && amount >= 300000 && amount < 1000000) || (price === "10000-25000" && amount >= 1000000 && amount < 2500000) || (price === "25000-plus" && amount >= 2500000);
+    const inSizeBand = (ml: number | null) => size === "all" || (ml != null && ((size === "under-10" && ml < 10) || (size === "10-30" && ml >= 10 && ml <= 30) || (size === "30-75" && ml > 30 && ml <= 75) || (size === "75-plus" && ml > 75)));
+    const filtered = unique.filter((p) => {
+      const amount = listingAmountCents(p);
+      return (condition === "all" || p.kind === condition) && (listing === "all" || (listing === "bid" ? isBidListing(p.saleType) : !isBidListing(p.saleType))) && (brand === "all" || p.brand === brand) && (location === "all" || p.owner.location === location) && inSizeBand(p.ml) && inPriceBand(amount);
+    });
+    return filtered.sort((a, b) => {
+      const aAmount = listingAmountCents(a); const bAmount = listingAmountCents(b);
+      const aPerMl = a.ml ? aAmount / a.ml : Number.POSITIVE_INFINITY; const bPerMl = b.ml ? bAmount / b.ml : Number.POSITIVE_INFINITY;
+      if (sort === "price-low") return aAmount - bAmount;
+      if (sort === "price-high") return bAmount - aAmount;
+      if (sort === "per-ml-low") return aPerMl - bPerMl;
+      if (sort === "per-ml-high") return bPerMl - aPerMl;
+      return 0;
+    });
+  }, [brand, condition, listing, location, perfumes, price, query, ratingMap, size, sort]);
+  const matchedCollections = useMemo(() => query.trim() ? searchCollections(collections, query) : collections, [collections, query]);
+  const hasFilters = Boolean(query || condition !== "all" || listing !== "all" || brand !== "all" || location !== "all" || size !== "all" || price !== "all" || sort !== "newest");
+  const clear = () => { setQuery(""); setCondition("all"); setListing("all"); setBrand("all"); setLocation("all"); setSize("all"); setPrice("all"); setSort("newest"); };
 
   return <div className="search-marketplace">
     <div className="search-bar-shell">
-      <div className="search-input-wrap"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search perfumes, brands, notes, or collections" aria-label="Search Atelier" />{query ? <button type="button" onClick={() => setQuery("")} aria-label="Clear search">×</button> : null}</div>
-      <div className="search-filter-row" aria-label="Listing filters"><span>Format</span>{FORMATS.map((option) => <button type="button" key={option} className={format === option ? "is-active" : ""} onClick={() => setFormat(option)}>{option === "all" ? "All" : option}</button>)}<i /><button type="button" className={listing === "all" ? "is-active" : ""} onClick={() => setListing("all")}>All listings</button><button type="button" className={listing === "buy" ? "is-active" : ""} onClick={() => setListing("buy")}>Buy now</button><button type="button" className={listing === "bid" ? "is-active" : ""} onClick={() => setListing("bid")}>Open to bids</button></div>
+      <div className="search-input-wrap"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by brand, perfume, or note" aria-label="Search by brand, perfume, or note" />{query ? <button type="button" onClick={() => setQuery("")} aria-label="Clear search">×</button> : null}</div>
       <div className="search-note-row"><span className="eyebrow">Popular notes</span>{POPULAR_NOTES.map((note) => <button type="button" key={note} className={query.toLowerCase() === note.toLowerCase() ? "is-active" : ""} onClick={() => setQuery(query.toLowerCase() === note.toLowerCase() ? "" : note)}>{note}</button>)}</div>
+      <div className="search-filter-grid" aria-label="Marketplace filters">
+        <SearchSelect label="Listing" value={listing} onChange={(value) => setListing(value as typeof listing)}><option value="all">All listings</option><option value="buy">Buy now</option><option value="bid">Accepting bids</option></SearchSelect>
+        <SearchSelect label="Condition" value={condition} onChange={(value) => setCondition(value as Condition)}>{CONDITIONS.map((o) => <option key={o} value={o}>{o === "all" ? "Any condition" : o[0].toUpperCase() + o.slice(1)}</option>)}</SearchSelect>
+        <SearchSelect label="Size" value={size} onChange={(value) => setSize(value as SizeBand)}><option value="all">Any size</option><option value="under-10">Under 10 ml</option><option value="10-30">10–30 ml</option><option value="30-75">30–75 ml</option><option value="75-plus">75+ ml</option></SearchSelect>
+        <SearchSelect label="Price" value={price} onChange={(value) => setPrice(value as PriceBand)}><option value="all">Any price</option><option value="under-3000">Under ₹3,000</option><option value="3000-10000">₹3,000–10,000</option><option value="10000-25000">₹10,000–25,000</option><option value="25000-plus">₹25,000+</option></SearchSelect>
+        <SearchSelect label="Brand" value={brand} onChange={setBrand}><option value="all">All brands</option>{brands.map((o) => <option key={o} value={o}>{o}</option>)}</SearchSelect>
+        <SearchSelect label="Location" value={location} onChange={setLocation}><option value="all">Anywhere</option>{locations.map((o) => <option key={o} value={o}>{o}</option>)}</SearchSelect>
+      </div>
     </div>
-    {active ? <section className="search-results">
-      <div className="search-results-heading"><div><p className="eyebrow">DISCOVERY</p><h2>{matchedPerfumes.length} listing{matchedPerfumes.length === 1 ? "" : "s"}</h2></div><div className="search-view-toggle"><button type="button" className={view === "list" ? "is-active" : ""} onClick={() => setView("list")}>List</button><button type="button" className={view === "cards" ? "is-active" : ""} onClick={() => setView("cards")}>Cards</button></div></div>
-      {brands.length ? <div className="search-brand-row"><span>Brands</span>{brands.map((brand) => <button key={brand} type="button" onClick={() => setQuery(brand)}>{brand}</button>)}</div> : null}
-      {matchedCollections.length ? <div className="search-collection-group"><p className="eyebrow">COLLECTIONS</p>{matchedCollections.map((collection) => <Link key={collection.id} href={`/u/${collection.owner.username}/c/${collection.id}`}><span>{collection.name}</span><small>@{collection.owner.username} · {collection.perfumeCount} perfumes</small><b>↗</b></Link>)}</div> : null}
-      {!matchedPerfumes.length && !matchedCollections.length ? <p className="search-empty">Nothing matched that search. Try a perfume, a house, a note, or remove a filter.</p> : null}
-      <div className={view === "list" ? "search-listings" : "search-card-grid"}>{matchedPerfumes.map((perfume) => <SearchListing key={perfume.id} perfume={perfume} card={view === "cards"} />)}</div>
-    </section> : <details className="search-collectors"><summary>Browse collectors <span>({allUsers.length})</span></summary><div>{allUsers.map((user) => <Link key={user.id} href={`/u/${user.username}`}>@{user.username}<small>{user.location || "Somewhere scented"}</small></Link>)}</div></details>}
+    <section className="search-results">
+      <div className="search-results-heading"><div><p className="eyebrow">MARKETPLACE</p><h2>{matchedPerfumes.length} listing{matchedPerfumes.length === 1 ? "" : "s"}</h2></div><div className="search-result-tools"><label className="search-sort">Sort<select value={sort} onChange={(event) => setSort(event.target.value as Sort)}><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="per-ml-low">Price/ml: low to high</option><option value="per-ml-high">Price/ml: high to low</option></select></label><div className="search-view-toggle"><button type="button" className={view === "list" ? "is-active" : ""} onClick={() => setView("list")}>List</button><button type="button" className={view === "cards" ? "is-active" : ""} onClick={() => setView("cards")}>Cards</button></div></div></div>
+      {hasFilters ? <button type="button" className="search-clear" onClick={clear}>Clear filters</button> : null}
+      {matchedCollections.length ? <div className="search-collection-group"><p className="eyebrow">COLLECTIONS</p>{matchedCollections.slice(0, 6).map((c) => <Link key={c.id} href={`/u/${c.owner.username}/c/${c.id}`}><span>{c.name}</span><small>@{c.owner.username} · {c.perfumeCount} perfumes</small><b>↗</b></Link>)}</div> : null}
+      {!matchedPerfumes.length && !matchedCollections.length ? <p className="search-empty">Nothing matched. Try a perfume, a house, a note, or broaden your filters.</p> : null}
+      <div className={view === "list" ? "search-listings" : "search-card-grid"}>{matchedPerfumes.map((p) => <SearchListing key={p.id} perfume={p} card={view === "cards"} />)}</div>
+      {!hasFilters ? <details className="search-collectors"><summary>Browse collectors <span>({allUsers.length})</span></summary><div>{allUsers.map((u) => <Link key={u.id} href={`/u/${u.username}`}>@{u.username}<small>{u.location || "Somewhere scented"}</small></Link>)}</div></details> : null}
+    </section>
   </div>;
 }
 
+function SearchSelect({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: React.ReactNode }) { return <label className="search-select"><span>{label}</span><select value={value} onChange={(event) => onChange(event.target.value)}>{children}</select></label>; }
 function SearchListing({ perfume, card }: { perfume: SearchablePerfume; card: boolean }) {
-  const bid = isBidListing(perfume.saleType);
-  const amount = listingAmountCents(perfume);
+  const bid = isBidListing(perfume.saleType); const amount = listingAmountCents(perfume);
   return <Link href={`/p/${perfume.id}`} className={card ? "search-listing search-listing-card" : "search-listing"}>
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img src={perfume.imageUrl || "/atelier/atelier-perfume-cover.png"} alt="" />
-    <span className="search-listing-copy"><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{perfume.owner.username}</em></span>
-    <span className="search-listing-details">{perfume.kind ? `${perfume.kind} · ` : ""}{perfume.ml ? `${perfume.ml} ml` : ""}</span><span className="search-listing-price">{bid ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span><span className="listing-live-dot" aria-label="Available" title="Available" />
+    <span className="search-listing-copy"><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{perfume.owner.username}{perfume.owner.location ? ` · ${perfume.owner.location}` : ""}</em></span>
+    <span className="search-listing-details">{perfume.kind ? `${perfume.kind} · ` : ""}{perfume.ml ? `${perfume.ml} ml · ${formatPricePerMl(amount, perfume.ml)}` : ""}</span><span className="search-listing-price">{bid ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span><span className="listing-live-dot" aria-label="Available" title="Available" />
   </Link>;
 }

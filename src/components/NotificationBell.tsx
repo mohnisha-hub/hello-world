@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 type Notification = { id: string; body: string; href: string; readAt: string | null };
@@ -8,14 +8,22 @@ type Notification = { id: string; body: string; href: string; readAt: string | n
 export function NotificationBell() {
   const [items, setItems] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const bellRef = useRef<HTMLDivElement>(null);
   const load = async () => {
     const response = await fetch("/api/notifications", { cache: "no-store" });
     if (response.ok) setItems((await response.json()).notifications);
   };
   useEffect(() => { load(); const timer = window.setInterval(load, 15000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => {
+    const closeOnOutsidePointer = (event: PointerEvent) => { if (bellRef.current && !bellRef.current.contains(event.target as Node)) setOpen(false); };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("pointerdown", closeOnOutsidePointer); document.removeEventListener("keydown", closeOnEscape); };
+  }, []);
   const unread = items.filter((item) => !item.readAt).length;
   const markRead = async () => { await fetch("/api/notifications", { method: "POST" }); await load(); };
-  return <div className="relative">
+  return <div className="relative" ref={bellRef}>
     <button className="notification-bell" type="button" onClick={() => { setOpen(!open); if (!open) markRead(); }} aria-label={unread ? `Notifications (${unread} unread)` : "Notifications"} aria-expanded={open}>
       <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></svg>
       {unread ? <span className="notification-count">{unread > 9 ? "9+" : unread}</span> : null}

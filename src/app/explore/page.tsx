@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { PerfumeCard, CollectionCard } from "@/components/Cards";
 import { SearchFilter } from "@/components/SearchFilter";
 import { sellerRating } from "@/lib/listings";
 
@@ -32,21 +31,6 @@ export default async function ExplorePage() {
         <Link className="btn" href="/me/create">List something</Link>
       </div>
       <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={users} ratingMap={ratingMap} />
-      {collections.length ? (
-        <section>
-          <div className="mb-4 flex items-baseline justify-between"><h2 className="section-heading">Collections</h2><span className="text-xs text-muted">Freshly published</span></div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {collections.map((collection) => <CollectionCard key={collection.id} collection={collection} perfumeCount={collection.perfumes.length} href={`/u/${collection.owner.username}/c/${collection.id}`} />)}
-          </div>
-        </section>
-      ) : null}
-      <section>
-        <div className="mb-4 flex items-baseline justify-between"><h2 className="section-heading">Latest listings</h2><span className="text-xs text-muted">Available now</span></div>
-        {perfumes.length === 0 ? <p className="text-muted">No published listings yet.</p> : null}
-        <div className="grid gap-4 sm:grid-cols-2">
-          {perfumes.map((perfume) => <PerfumeCard key={perfume.id} perfume={perfume} href={`/p/${perfume.id}`} username={perfume.owner.username} />)}
-        </div>
-      </section>
     </div>
   );
 }
