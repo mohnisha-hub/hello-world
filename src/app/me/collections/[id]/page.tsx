@@ -28,7 +28,7 @@ export default async function EditCollectionPage({ params }: { params: Promise<{
         </Link>
         <form action={deleteCollectionForm}>
           <input type="hidden" name="id" value={collection.id} />
-          <ConfirmDeleteButton className="btn btn-danger-outline" confirmation="Delete this collection? Its perfumes will move to Uncategorized and the collection can be restored later.">Delete collection</ConfirmDeleteButton>
+          <ConfirmDeleteButton className="btn btn-danger-outline" confirmation="Delete this collection? Its perfumes will move to Uncategorized. You can restore the collection later, but its perfumes will remain there.">Delete collection</ConfirmDeleteButton>
         </form>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

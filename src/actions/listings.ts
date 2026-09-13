@@ -9,6 +9,7 @@ import { suggestedCollectionArt, suggestedPerfumeArt } from "@/lib/photos";
 import { rupeesToPaise } from "@/lib/money";
 import { isBidListing } from "@/lib/sale";
 import { fragranceByCatalogKey, notesToText } from "@/lib/fragrance-catalog";
+import { withNotice } from "@/lib/notice";
 
 function revalidateOwner(username: string, extra?: string[]) {
   revalidatePath("/me");
@@ -324,6 +325,7 @@ export async function deletePerfumeAction(formData: FormData) {
   });
   await syncCollectionStatus(perfume.collectionId);
   revalidateOwner(user.username);
+  redirect(withNotice("/me/drafts", "Perfume removed from your profile. You can restore it here."));
 }
 
 export async function restoreItemAction(formData: FormData) {
@@ -353,7 +355,7 @@ export async function deleteCollectionAction(formData: FormData) {
   await prisma.collection.update({ where: { id }, data: { status: "deleted" } });
   await prisma.pin.deleteMany({ where: { userId: user.id, targetType: "collection", targetId: id } });
   revalidateOwner(user.username, [`/u/${user.username}/c/${id}`, ...(destination ? [`/u/${user.username}/c/${destination.id}`] : [])]);
-  redirect(`/u/${user.username}`);
+  redirect(withNotice("/me/drafts", "Collection removed. Its perfumes are now in Uncategorized; the collection can be restored here."));
 }
 
 export async function markPerfumeSoldAction(formData: FormData) {

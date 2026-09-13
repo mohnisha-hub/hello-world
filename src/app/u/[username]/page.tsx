@@ -132,24 +132,13 @@ export default async function PublicProfilePage({ params, searchParams }: { para
         <main className="profile-content">
           {topThree.length ? <TopThree perfumes={topThree} username={user.username} profileId={user.id} heartCounts={heartCounts} heartedSlots={heartedSlots} canHeart={Boolean(session?.user?.id && !isOwner)} /> : null}
 
-          <ProfileSection title="Collections" detail="Curated shelves" tools={isOwner ? <SectionTools addHref="/me/collections/new" editHref="/me/collections" addLabel="Add collection" editLabel="Edit collections" /> : null}>
-            {liveCollections.length ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {liveCollections.map((collection) => (
-                  <div key={collection.id}>
-                    <CollectionCard collection={collection} perfumeCount={collection.perfumes.filter((perfume) => perfume.status === "published").length} href={`/u/${user.username}/c/${collection.id}`} />
-                    {isOwner ? <OwnerActions targetType="collection" targetId={collection.id} pinned={pinIds.has(collection.id)} editHref={`/me/collections/${collection.id}`} /> : null}
-                  </div>
-                ))}
-              </div>
-            ) : <EmptyState text="No published collections yet." />}
-          </ProfileSection>
-
           <ProfileSection title={isOwner ? "My shelf" : `@${user.username}'s shelf`} detail="Collection perfumes" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={shelfPaging.page} pageKey="shelfPage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
             {shelfPerfumes.length ? <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>{shelfPaging.items.map((perfume) => <div key={perfume.id}><ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />{isOwner ? <OwnerActions targetType="perfume" targetId={perfume.id} pinned={pinIds.has(perfume.id)} editHref={`/me/perfumes/${perfume.id}/edit`} curated={scentShowcase.top3.includes(perfume.id)} canCurate={scentShowcase.top3.length < 3} /> : null}</div>)}</div><ProfilePagination username={user.username} pageKey="shelfPage" paging={shelfPaging} view={listingView} /></> : <EmptyState text={isOwner ? "Add a perfume to your shelf to share your collection." : "No shelf perfumes shared yet."} />}
           </ProfileSection>
 
-          {availablePerfumes.length ? <ProfileSection title="Available now" detail="Ready to buy" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={availablePaging.page} pageKey="availablePage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
+          {availablePerfumes.length || openBidListings.length ? <section className="profile-section profile-marketplace">
+            <div className="profile-section-heading"><div><p className="eyebrow">MARKETPLACE</p><h2 className="section-heading">Up for grabs</h2></div></div>
+          {availablePerfumes.length ? <ProfileSection title="Buy now" detail="Ready to buy" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={availablePaging.page} pageKey="availablePage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
             {availablePerfumes.length ? (
               <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>
                 {availablePaging.items.map((perfume) => (
@@ -162,7 +151,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
             ) : <EmptyState text="No buy-now perfumes at the moment." />}
           </ProfileSection> : null}
 
-          {openBidListings.length ? <ProfileSection title="Bidding floor" detail={isOwner ? "Offers on your perfumes" : "Make an offer"} tools={<ProfileListingControls username={user.username} view={listingView} page={bidPaging.page} pageKey="bidsPage" />}>
+          {openBidListings.length ? <ProfileSection title="Accepting bids" detail={isOwner ? "Offers on your perfumes" : "Make an offer"} tools={<ProfileListingControls username={user.username} view={listingView} page={bidPaging.page} pageKey="bidsPage" />}>
             {openBidListings.length ? (
               <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>
                 {bidPaging.items.map((perfume) => {
@@ -189,6 +178,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
               </div><ProfilePagination username={user.username} pageKey="bidsPage" paging={bidPaging} view={listingView} /></>
             ) : <EmptyState text="No active bid listings right now." />}
           </ProfileSection> : null}
+          </section> : null}
 
           {isOwner && acceptedBidListings.length ? (
             <ProfileSection title="Accepted deals" detail="Ready to close">
@@ -202,6 +192,19 @@ export default async function PublicProfilePage({ params, searchParams }: { para
               <div className="mt-4 grid gap-3 sm:grid-cols-2">{soldPerfumes.map((perfume) => <PerfumeCard key={perfume.id} perfume={perfume} href={`/p/${perfume.id}`} showStatus />)}</div>
             </details>
           ) : null}
+
+          <ProfileSection title="Collections" detail="Curated shelves" tools={isOwner ? <SectionTools addHref="/me/collections/new" editHref="/me/collections" addLabel="Add collection" editLabel="Edit collections" /> : null}>
+            {liveCollections.length ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {liveCollections.map((collection) => (
+                  <div key={collection.id}>
+                    <CollectionCard collection={collection} perfumeCount={collection.perfumes.filter((perfume) => perfume.status === "published").length} href={`/u/${user.username}/c/${collection.id}`} />
+                    {isOwner ? <OwnerActions targetType="collection" targetId={collection.id} pinned={pinIds.has(collection.id)} editHref={`/me/collections/${collection.id}`} /> : null}
+                  </div>
+                ))}
+              </div>
+            ) : <EmptyState text="No published collections yet." />}
+          </ProfileSection>
         </main>
 
         <aside className="profile-rail">
