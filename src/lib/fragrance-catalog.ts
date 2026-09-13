@@ -238,3 +238,11 @@ export function searchFragranceCatalog(query: string, limit = 8) {
 export function notesToText(notes: string[]) {
   return notes.join(", ");
 }
+
+export function fragranceCatalogKey(entry: Pick<FragranceEntry, "brand" | "name">) {
+  return `${normalize(entry.brand)}--${normalize(entry.name)}`;
+}
+
+export function fragranceByCatalogKey(key: string) {
+  return FRAGRANCE_CATALOG.find((entry) => fragranceCatalogKey(entry) === key) ?? null;
+}

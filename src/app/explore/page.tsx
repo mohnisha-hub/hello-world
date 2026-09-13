@@ -2,9 +2,11 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { SearchFilter } from "@/components/SearchFilter";
 import { sellerRating } from "@/lib/listings";
+import { auth } from "@/auth";
+import { PerfumeFinder } from "@/components/PerfumeFinder";
 
 export default async function ExplorePage() {
-  const [perfumes, collections] = await Promise.all([
+  const [perfumes, collections, session] = await Promise.all([
     prisma.perfume.findMany({
       where: {
         status: "published",
@@ -20,6 +22,7 @@ export default async function ExplorePage() {
       include: { owner: true, perfumes: { where: { status: "published" } } },
       orderBy: { publishedAt: "desc" },
     }),
+    auth(),
   ]);
   const users = Array.from(new Map(perfumes.map((p) => [p.owner.id, p.owner])).values());
   const ratingRows = await Promise.all(users.map(async (user) => [user.id, await sellerRating(user.id)] as const));
@@ -29,12 +32,13 @@ export default async function ExplorePage() {
     <div className="space-y-10">
       <div className="flex flex-wrap items-end justify-between gap-5 border-b border-line pb-7">
         <div>
-          <p className="eyebrow">Atelier marketplace</p>
+          <p className="eyebrow">Atelier explore</p>
           <h1 className="mt-2 text-5xl sm:text-6xl">Find your next scent.</h1>
-          <p className="mt-3 max-w-xl text-muted">A considered marketplace for bottles, decants, collections, and the people who keep them.</p>
+          <p className="mt-3 max-w-xl text-muted">Explore a local perfume catalogue for your collection, or browse live bottles, decants, and bids from collectors.</p>
         </div>
         <Link className="btn" href="/me/create">List something</Link>
       </div>
+      <PerfumeFinder signedIn={Boolean(session?.user?.id)} />
       <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={users} ratingMap={ratingMap} />
     </div>
   );

@@ -83,7 +83,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
   const scentHearts = await prisma.scentHeart.findMany({ where: { profileId: user.id }, select: { slot: true, userId: true } });
   const heartCounts = Object.fromEntries(scentHearts.reduce((counts, heart) => counts.set(heart.slot, (counts.get(heart.slot) ?? 0) + 1), new Map<string, number>()));
   const heartedSlots = new Set(scentHearts.filter((heart) => heart.userId === session?.user?.id).map((heart) => heart.slot));
-  const selectableShowcasePerfumes = [...showcasePerfumes.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const selectableShowcasePerfumes = [...shelfPerfumes].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="profile-page space-y-8">
@@ -146,7 +146,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
             {shelfPerfumes.length ? <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>{shelfPaging.items.map((perfume) => <div key={perfume.id}><ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />{isOwner ? <OwnerActions targetType="perfume" targetId={perfume.id} pinned={pinIds.has(perfume.id)} editHref={`/me/perfumes/${perfume.id}/edit`} curated={scentShowcase.top3.includes(perfume.id)} canCurate={scentShowcase.top3.length < 3} /> : null}</div>)}</div><ProfilePagination username={user.username} pageKey="shelfPage" paging={shelfPaging} view={listingView} /></> : <EmptyState text={isOwner ? "Add a perfume to your shelf to share your collection." : "No shelf perfumes shared yet."} />}
           </ProfileSection>
 
-          <ProfileSection title="Available now" detail="Ready to buy" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={availablePaging.page} pageKey="availablePage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
+          {availablePerfumes.length ? <ProfileSection title="Available now" detail="Ready to buy" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={availablePaging.page} pageKey="availablePage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
             {availablePerfumes.length ? (
               <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>
                 {availablePaging.items.map((perfume) => (
@@ -157,9 +157,9 @@ export default async function PublicProfilePage({ params, searchParams }: { para
                 ))}
               </div><ProfilePagination username={user.username} pageKey="availablePage" paging={availablePaging} view={listingView} /></>
             ) : <EmptyState text="No buy-now perfumes at the moment." />}
-          </ProfileSection>
+          </ProfileSection> : null}
 
-          <ProfileSection title="Bidding floor" detail={isOwner ? "Offers on your perfumes" : "Make an offer"} tools={<ProfileListingControls username={user.username} view={listingView} page={bidPaging.page} pageKey="bidsPage" />}>
+          {openBidListings.length ? <ProfileSection title="Bidding floor" detail={isOwner ? "Offers on your perfumes" : "Make an offer"} tools={<ProfileListingControls username={user.username} view={listingView} page={bidPaging.page} pageKey="bidsPage" />}>
             {openBidListings.length ? (
               <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>
                 {bidPaging.items.map((perfume) => {
@@ -185,7 +185,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
                 })}
               </div><ProfilePagination username={user.username} pageKey="bidsPage" paging={bidPaging} view={listingView} /></>
             ) : <EmptyState text="No active bid listings right now." />}
-          </ProfileSection>
+          </ProfileSection> : null}
 
           {isOwner && acceptedBidListings.length ? (
             <ProfileSection title="Accepted deals" detail="Ready to close">
@@ -249,7 +249,7 @@ function ScentHeartButton({ profileId, perfumeId, slot, count, hearted, canHeart
 
 function ScentProfileEditor({ perfumes, topThree, slots }: { perfumes: { id: string; name: string; brand: string | null }[]; topThree: string[]; slots: Record<string, string | undefined> }) {
   if (!perfumes.length) return <p className="mt-3 text-sm leading-6 text-muted">Publish a perfume to start your scent profile.</p>;
-  return <details className="scent-profile-editor"><summary>Curate your picks</summary><form action={saveScentShowcaseAction}><fieldset><legend>Top 3</legend>{["top1", "top2", "top3"].map((name, index) => <label key={name}>#{index + 1}<ShowcaseSelect name={name} value={topThree[index]} perfumes={perfumes} /></label>)}</fieldset><fieldset><legend>Roles</legend>{SCENT_PROFILE_SLOTS.map(([key, label]) => <label key={key}>{label}<ShowcaseSelect name={key} value={slots[key]} perfumes={perfumes} /></label>)}</fieldset><button className="btn btn-compact" type="submit">Save scent profile</button></form></details>;
+  return <div className="scent-profile-editor"><p className="mb-3 text-xs leading-5 text-muted">Choose the perfumes that tell your scent story. Your Podium stays at the top of your profile.</p><form action={saveScentShowcaseAction}><fieldset><legend>Top 3</legend>{["top1", "top2", "top3"].map((name, index) => <label key={name}>#{index + 1}<ShowcaseSelect name={name} value={topThree[index]} perfumes={perfumes} /></label>)}</fieldset><fieldset><legend>Roles</legend>{SCENT_PROFILE_SLOTS.map(([key, label]) => <label key={key}>{label}<ShowcaseSelect name={key} value={slots[key]} perfumes={perfumes} /></label>)}</fieldset><button className="btn btn-compact" type="submit">Save scent profile</button></form></div>;
 }
 
 function ShowcaseSelect({ name, value, perfumes }: { name: string; value?: string; perfumes: { id: string; name: string; brand: string | null }[] }) {
