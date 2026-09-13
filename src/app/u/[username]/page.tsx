@@ -75,11 +75,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const selectableShowcasePerfumes = [...showcasePerfumes.values()].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="space-y-10">
-      <section className="overflow-hidden rounded-2xl border border-line bg-paper">
-        <div className="h-20 bg-[linear-gradient(115deg,color-mix(in_srgb,var(--accent)_48%,transparent),transparent_58%)]" />
-        <div className="flex flex-wrap items-end justify-between gap-5 px-5 pb-5 sm:px-7 sm:pb-7">
-          <div className="-mt-9 flex items-end gap-4">
+    <div className="profile-page space-y-8">
+      <section className="profile-hero">
+        <div className="profile-cover" />
+        <div className="profile-identity-row">
+          <div className="profile-identity">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={user.photoUrl || `https://api.dicebear.com/9.x/lorelei/svg?seed=${user.username}`}
@@ -99,23 +99,23 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           ) : null}
         </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="profile-primary-actions">
             {isOwner ? <Link className="btn btn-ghost" href="/me/profile">Edit profile</Link> : null}
             {!isOwner ? <Link className="btn btn-ghost" href="/explore">Explore scents</Link> : null}
           </div>
         </div>
-        <div className="grid gap-4 border-t border-line px-5 py-4 text-center sm:grid-cols-3 sm:px-7">
-          <div><p className="font-serif text-2xl">{liveCollections.length}</p><p className="text-xs uppercase tracking-wider text-muted">Collections</p></div>
-          <div><p className="font-serif text-2xl">{availableListings.length}</p><p className="text-xs uppercase tracking-wider text-muted">Available listings</p></div>
-          <div><p className="font-serif text-2xl">{publicWishlistCollections.length + publicWishlistPerfumes.length}</p><p className="text-xs uppercase tracking-wider text-muted">Wishlist</p></div>
+        <div className="profile-stats">
+          <div><p>{liveCollections.length}</p><span>Collections</span></div>
+          <div><p>{availableListings.length}</p><span>Available</span></div>
+          <div><p>{publicWishlistCollections.length + publicWishlistPerfumes.length}</p><span>Wishlist</span></div>
         </div>
         {user.bio ? <p className="border-t border-line px-5 py-4 text-sm leading-6 sm:px-7">{user.bio}</p> : null}
       </section>
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_17rem]">
-        <main className="space-y-10">
+      <div className="profile-layout">
+        <main className="profile-content">
           {topThree.length ? <TopThree perfumes={topThree} username={user.username} /> : null}
 
-          <ProfileSection title="Collections" detail="" tools={isOwner ? <SectionTools addHref="/me/collections/new" editHref="/me/collections" addLabel="Add collection" editLabel="Edit collections" /> : null}>
+          <ProfileSection title="Collections" detail="Curated shelves" tools={isOwner ? <SectionTools addHref="/me/collections/new" editHref="/me/collections" addLabel="Add collection" editLabel="Edit collections" /> : null}>
             {liveCollections.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {liveCollections.map((collection) => (
@@ -128,7 +128,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             ) : <EmptyState text="No published collections yet." />}
           </ProfileSection>
 
-          <ProfileSection title="Available perfumes" detail="Ready to buy" tools={isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}>
+          <ProfileSection title="Available now" detail="Ready to buy" tools={isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}>
             {availablePerfumes.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {availablePerfumes.map((perfume) => (
@@ -141,7 +141,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             ) : <EmptyState text="No buy-now perfumes at the moment." />}
           </ProfileSection>
 
-          <ProfileSection title="Open bids" detail={isOwner ? "Offers on your perfumes" : "Make an offer"}>
+          <ProfileSection title="Bidding floor" detail={isOwner ? "Offers on your perfumes" : "Make an offer"}>
             {openBidListings.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {openBidListings.map((perfume) => {
@@ -182,7 +182,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           ) : null}
         </main>
 
-        <aside className="lg:sticky lg:top-20">
+        <aside className="profile-rail">
           {isOwner || scentRoles.length ? (
             <section className="scent-profile-panel">
               <div className="mb-3"><p className="eyebrow">SCENT PROFILE</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My scent profile" : `@${user.username}'s picks`}</h2></div>
@@ -224,7 +224,7 @@ function ShowcaseSelect({ name, value, perfumes }: { name: string; value?: strin
 }
 
 function ProfileSection({ title, detail, tools, children }: { title: string; detail: string; tools?: React.ReactNode; children: React.ReactNode }) {
-  return <section><div className="mb-4 flex items-baseline justify-between gap-4"><h2 className="section-heading">{title}</h2><div className="flex items-center gap-2"><p className="text-right text-xs text-muted">{detail}</p>{tools}</div></div>{children}</section>;
+  return <section className="profile-section"><div className="profile-section-heading"><div><p className="eyebrow">{detail || "ATELIER"}</p><h2 className="section-heading">{title}</h2></div><div className="flex items-center gap-2">{tools}</div></div>{children}</section>;
 }
 
 function SectionTools({ addHref, editHref, addLabel, editLabel }: { addHref: string; editHref: string; addLabel: string; editLabel: string }) {
@@ -240,5 +240,5 @@ function WishlistMiniCard({ href, title, meta }: { href: string; title: string; 
 }
 
 function OwnerActions({ targetType, targetId, pinned, editHref, canSell }: { targetType: "collection" | "perfume"; targetId: string; pinned: boolean; editHref: string; canSell?: boolean }) {
-  return <div className="flex flex-wrap gap-2 px-1 pt-2 text-xs"><Link className="card-action" href={editHref}>Edit</Link><form action={pinForm}><input type="hidden" name="targetType" value={targetType} /><input type="hidden" name="targetId" value={targetId} /><button className="card-action" type="submit">{pinned ? "Unpin" : "Pin"}</button></form>{canSell ? <><form action={soldForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Mark sold</button></form><form action={deletePerfumeForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Delete</button></form></> : null}</div>;
+  return <div className="profile-owner-actions"><Link className="card-action" href={editHref}>Edit</Link><form action={pinForm}><input type="hidden" name="targetType" value={targetType} /><input type="hidden" name="targetId" value={targetId} /><button className="card-action" type="submit">{pinned ? "Unpin" : "Pin"}</button></form>{canSell ? <><form action={soldForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Mark sold</button></form><form action={deletePerfumeForm}><input type="hidden" name="id" value={targetId} /><button className="card-action" type="submit">Delete</button></form></> : null}</div>;
 }
