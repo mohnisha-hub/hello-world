@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { addCatalogPerfumeToShelfAction } from "@/actions/listings";
 import { toggleWishlistAction } from "@/actions/wishlist";
 import { FRAGRANCE_CATALOG, fragranceCatalogKey, type FragranceEntry } from "@/lib/fragrance-catalog";
@@ -24,8 +24,24 @@ function FinderResult({ entry, signedIn }: { entry: FragranceEntry; signedIn: bo
   const key = fragranceCatalogKey(entry);
   return <article className="finder-result">
     <div><p className="eyebrow">{entry.brand}</p><h3>{entry.name}</h3><p className="finder-notes">{[...entry.top, ...entry.middle, ...entry.base].slice(0, 5).join(" · ")}</p></div>
-    <div className="finder-actions">{signedIn ? <><form action={addCatalogPerfumeToShelfAction}><input type="hidden" name="catalogKey" value={key} /><button className="card-action" type="submit">Add to shelf</button></form><form action={toggleWishlistAction}><input type="hidden" name="targetType" value="catalog" /><input type="hidden" name="targetId" value={key} /><button className="card-action" type="submit">Wishlist</button></form></> : <a className="card-action" href="/login?from=/explore">Sign in to save</a>}</div>
+    <div className="finder-actions">{signedIn ? <><FinderSaveButton kind="shelf" catalogKey={key} /><FinderSaveButton kind="wishlist" catalogKey={key} /></> : <a className="card-action" href="/login?from=/explore">Sign in to save</a>}</div>
   </article>;
+}
+
+function FinderSaveButton({ kind, catalogKey }: { kind: "shelf" | "wishlist"; catalogKey: string }) {
+  const [saved, setSaved] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(async () => {
+      if (kind === "shelf") await addCatalogPerfumeToShelfAction(formData);
+      else await toggleWishlistAction(formData);
+      setSaved(true);
+    });
+  };
+  const label = saved ? (kind === "shelf" ? "On your shelf" : "Wishlisted") : pending ? "Saving…" : kind === "shelf" ? "Add to shelf" : "Wishlist";
+  return <form onSubmit={submit}><input type="hidden" name={kind === "shelf" ? "catalogKey" : "targetId"} value={catalogKey} />{kind === "wishlist" ? <input type="hidden" name="targetType" value="catalog" /> : null}<button className={`card-action finder-save ${saved ? "is-saved" : ""}`} type="submit" disabled={pending || saved} aria-live="polite">{saved ? "✓ " : ""}{label}</button></form>;
 }
 
 function recommend(entries: FragranceEntry[], notes: string[], query: string) {
