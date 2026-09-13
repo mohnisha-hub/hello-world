@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { logoutAction } from "@/actions/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NavMenu } from "@/components/NavMenu";
+import { prisma } from "@/lib/prisma";
 
 export async function Nav() {
   let session = null;
@@ -12,6 +13,9 @@ export async function Nav() {
   } catch {
     session = null;
   }
+  const navUser = session?.user?.id
+    ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } })
+    : null;
   return (
     <header className="site-header sticky top-0 z-20">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
@@ -20,9 +24,9 @@ export async function Nav() {
         </Link>
         <nav className="flex items-center justify-end gap-1.5 text-sm" aria-label="Primary navigation">
           <Link className="nav-link" href="/explore">Explore</Link>
-          {session?.user ? (
+          {navUser ? (
             <>
-              <Link className="nav-link" href={`/u/${session.user.username}`}>My profile</Link>
+              <Link className="nav-link" href={`/u/${navUser.username}`}>My profile</Link>
               <Link className="nav-link" href="/me/messages">Messages</Link>
               <NavMenu />
               <NotificationBell />

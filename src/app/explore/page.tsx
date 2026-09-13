@@ -6,7 +6,11 @@ import { sellerRating } from "@/lib/listings";
 export default async function ExplorePage() {
   const [perfumes, collections] = await Promise.all([
     prisma.perfume.findMany({
-      where: { status: "published", owner: { profileStatus: "published" } },
+      where: {
+        status: "published",
+        owner: { profileStatus: "published" },
+        OR: [{ collectionId: null }, { collection: { status: { in: ["published", "sold"] } } }],
+      },
       include: { owner: true },
       orderBy: { publishedAt: "desc" },
     }),
