@@ -11,12 +11,14 @@ import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { formatMoney } from "@/lib/money";
 import { saveScentShowcaseAction } from "@/actions/profile";
 import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
+import { settleExpiredAuctions } from "@/lib/auctions";
 
 export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ username: string }>; searchParams: Promise<{ view?: string; availablePage?: string; bidsPage?: string }> }) {
   const { username } = await params;
   const listingParams = await searchParams;
   const listingView = listingParams.view === "list" ? "list" : "cards";
   const session = await auth();
+  await settleExpiredAuctions();
   const user = await prisma.user.findUnique({
     where: { username },
     include: {
@@ -58,10 +60,10 @@ export default async function PublicProfilePage({ params, searchParams }: { para
     ? await prisma.bid.groupBy({
         by: ["perfumeId"],
         where: { perfumeId: { in: openBidListings.map((perfume) => perfume.id) }, kind: "bid", status: "open" },
-        _max: { amountCents: true },
+        _max: { amountCents: true }, _count: { id: true },
       })
     : [];
-  const bidHighByPerfume = Object.fromEntries(bidHighs.map((bid) => [bid.perfumeId, bid._max.amountCents]));
+  const bidStatsByPerfume = Object.fromEntries(bidHighs.map((bid) => [bid.perfumeId, { highest: bid._max.amountCents, count: bid._count.id }]));
   const availableListings = user.perfumes.filter((perfume) => perfume.status === "published");
   const availablePaging = paginate(availablePerfumes, readPage(listingParams.availablePage));
   const bidPaging = paginate(openBidListings, readPage(listingParams.bidsPage));
@@ -150,12 +152,13 @@ export default async function PublicProfilePage({ params, searchParams }: { para
               <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>
                 {bidPaging.items.map((perfume) => {
                   const minimum = listingAmountCents(perfume);
-                  const highest = bidHighByPerfume[perfume.id] ?? null;
+                  const stats = bidStatsByPerfume[perfume.id] ?? null;
+                  const highest = stats?.highest ?? null;
                   return (
                     <div key={perfume.id} className="space-y-2">
                       <ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />
                       <div className="rounded-xl border border-line bg-paper px-3 py-2.5 text-sm">
-                        <p className="text-muted">{highest ? `Current high ${formatMoney(highest)}` : `Minimum bid ${formatMoney(minimum)}`}</p>
+                        <p className="text-muted">Minimum bid {formatMoney(minimum)}</p><p className="mt-1 font-medium text-accent">{highest ? `Max bid ${formatMoney(highest)} · ${stats?.count} bid${stats?.count === 1 ? "" : "s"}` : "No bids received yet"}</p>
                         {!isOwner && session?.user ? (
                           <form action={bidForm} className="mt-2 flex gap-2">
                             <input type="hidden" name="perfumeId" value={perfume.id} />
@@ -245,7 +248,17 @@ function paginate<T>(items: T[], requestedPage: number) { const pageCount = Math
 function listingHref(username: string, view: "list" | "cards", pageKey: "availablePage" | "bidsPage", page: number) { return `/u/${username}?view=${view}&${pageKey}=${page}`; }
 function ProfileListingControls({ username, view, page, pageKey }: { username: string; view: "list" | "cards"; page: number; pageKey: "availablePage" | "bidsPage" }) { return <div className="search-view-toggle" aria-label="Listing display"><Link className={view === "list" ? "is-active" : ""} href={listingHref(username, "list", pageKey, page)}>List</Link><Link className={view === "cards" ? "is-active" : ""} href={listingHref(username, "cards", pageKey, page)}>Cards</Link></div>; }
 function ProfilePagination({ username, pageKey, paging, view }: { username: string; pageKey: "availablePage" | "bidsPage"; paging: { page: number; pageCount: number; count: number }; view: "list" | "cards" }) { if (paging.pageCount < 2) return null; const start = (paging.page - 1) * PROFILE_PAGE_SIZE + 1; const end = Math.min(paging.page * PROFILE_PAGE_SIZE, paging.count); return <nav className="listing-pagination" aria-label="Profile listing pages"><span>{start}–{end} of {paging.count}</span><div>{paging.page > 1 ? <Link href={listingHref(username, view, pageKey, paging.page - 1)}>Previous</Link> : <span>Previous</span>}{Array.from({ length: paging.pageCount }, (_, index) => index + 1).map((number) => <Link key={number} className={number === paging.page ? "is-active" : ""} aria-current={number === paging.page ? "page" : undefined} href={listingHref(username, view, pageKey, number)}>{number}</Link>)}{paging.page < paging.pageCount ? <Link href={listingHref(username, view, pageKey, paging.page + 1)}>Next</Link> : <span>Next</span>}</div></nav>; }
-function ProfilePerfumeDisplay({ perfume, view, username, showStatus }: { perfume: Parameters<typeof PerfumeCard>[0]["perfume"]; view: "list" | "cards"; username: string; showStatus: boolean }) { if (view === "cards") return <PerfumeCard perfume={perfume} href={`/p/${perfume.id}`} showStatus={showStatus} />; const amount = listingAmountCents(perfume); return <Link href={`/p/${perfume.id}`} className="search-listing"><span className="card-art art-tone-0" aria-hidden="true">{perfume.imageUrl ? <>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={perfume.imageUrl} alt="" /></> : <span>{perfume.name.slice(0, 1)}</span>}</span><span className="search-listing-copy"><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{username}</em></span><span className="search-listing-details">{perfume.kind ? `${perfume.kind} · ` : ""}{perfume.ml ? `${perfume.ml} ml` : ""}</span><span className="search-listing-price">{isBidListing(perfume.saleType) ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span><span className="listing-live-dot" aria-label="Available" /></Link>; }
+function ProfilePerfumeDisplay({ perfume, view, username, showStatus }: { perfume: Parameters<typeof PerfumeCard>[0]["perfume"]; view: "list" | "cards"; username: string; showStatus: boolean }) {
+  if (view === "cards") return <PerfumeCard perfume={perfume} href={`/p/${perfume.id}`} showStatus={showStatus} />;
+  const amount = listingAmountCents(perfume);
+  return <Link href={`/p/${perfume.id}`} className="search-listing">
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img src={perfume.imageUrl || "/atelier/atelier-perfume-cover.png"} alt="" />
+    <span className="search-listing-copy"><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{username}</em></span>
+    <span className="search-listing-details">{perfume.kind ? `${perfume.kind} · ` : ""}{perfume.ml ? `${perfume.ml} ml` : ""}</span>
+    <span className="search-listing-price">{isBidListing(perfume.saleType) ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span><span className="listing-live-dot" aria-label="Available" />
+  </Link>;
+}
 
 function WishlistMiniCard({ href, title, meta }: { href: string; title: string; meta: string }) {
   return <Link href={href} className="block rounded-lg border border-line px-3 py-2.5 transition-colors hover:border-line-strong hover:bg-bg"><p className="line-clamp-1 text-sm font-medium">{title}</p><p className="mt-0.5 text-xs text-muted">{meta}</p></Link>;

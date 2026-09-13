@@ -9,6 +9,7 @@ import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SaleBadge } from "@/components/SaleBadge";
 import { Notice } from "@/components/Notice";
+import { settleExpiredAuctions } from "@/lib/auctions";
 import { GuestAuthCta } from "@/components/GuestAuthCta";
 import {
   acceptBidForm,
@@ -29,6 +30,7 @@ export default async function PerfumePage({
 }) {
   const { id } = await params;
   const { notice } = await searchParams;
+  await settleExpiredAuctions();
   const session = await auth();
   const perfume = await prisma.perfume.findUnique({
     where: { id },
@@ -61,6 +63,7 @@ export default async function PerfumePage({
   const openBids = bids.filter((b) => b.status === "open");
   const highest = openBids[0] ?? null;
   const acceptedBid = bids.find((b) => b.status === "accepted") ?? null;
+  const bidEnded = Boolean(perfume.bidEndsAt && perfume.bidEndsAt <= new Date());
 
   return (
     <article className="grid gap-8 md:grid-cols-2">
@@ -93,9 +96,7 @@ export default async function PerfumePage({
           {perfume.ml ? ` · ${perfume.ml} ml · ${formatPricePerMl(amount, perfume.ml)}` : ""}
         </p>
         <p className="text-sm text-muted">{perfume.unitsAvailable} unit{perfume.unitsAvailable === 1 ? "" : "s"} available</p>
-        {bidListing && highest && perfume.status === "published" ? (
-          <p className="text-sm">Current highest bid: {formatMoney(highest.amountCents)}{isOwner ? ` from @${highest.bidder.username}` : ""}</p>
-        ) : null}
+        {bidListing ? <p className="text-sm">{highest ? `Current highest bid: ${formatMoney(highest.amountCents)}${isOwner ? ` from @${highest.bidder.username}` : ""}` : "No bids yet."} · {openBids.length} bid{openBids.length === 1 ? "" : "s"} received{perfume.bidEndsAt ? ` · ${bidEnded ? "Bidding ended" : `Ends ${perfume.bidEndsAt.toLocaleString()}`}` : ""}</p> : null}
         {perfume.catalogRating != null ? (
           <p className="text-sm">Community rating {perfume.catalogRating.toFixed(1)} / 5</p>
         ) : null}
@@ -152,7 +153,7 @@ export default async function PerfumePage({
                 {wish ? "Remove from wishlist" : "Wishlist perfume"}
               </button>
             </form>
-            {bidListing ? (
+            {bidListing && !bidEnded ? (
               <form action={bidForm} className="flex flex-wrap gap-2">
                 <input type="hidden" name="perfumeId" value={id} />
                 <input
@@ -167,7 +168,7 @@ export default async function PerfumePage({
                   Place bid
                 </button>
               </form>
-            ) : (
+            ) : bidListing ? <p className="text-sm text-muted">Bidding has ended. The winning bid is being confirmed.</p> : (
               <form action={buyForm}>
                 <input type="hidden" name="perfumeId" value={id} />
                 <button className="btn" type="submit">
@@ -187,7 +188,7 @@ export default async function PerfumePage({
                   <p>
                     @{b.bidder.username} · {formatMoney(b.amountCents)} · {b.status}
                   </p>
-                  {b.status === "open" && perfume.status === "published" ? (
+                  {b.status === "open" && perfume.status === "published" && !bidEnded ? (
                     <div className="flex flex-wrap gap-2">
                       <form action={acceptBidForm}>
                         <input type="hidden" name="id" value={b.id} />

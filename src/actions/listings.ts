@@ -113,6 +113,12 @@ export async function savePerfumeAction(formData: FormData) {
   if (saleType === "bid" && (minBidCents == null || minBidCents <= 0)) {
     return { error: "Enter a minimum bid in INR." };
   }
+  const durationValue = Number(String(formData.get("bidDuration") ?? ""));
+  const durationUnit = String(formData.get("bidDurationUnit") ?? "hours");
+  const durationHours = durationUnit === "days" ? durationValue * 24 : durationValue;
+  if (saleType === "bid" && (!Number.isInteger(durationValue) || durationValue < 1 || durationHours > 24 * 30)) {
+    return { error: "Set a bid duration from 1 hour to 30 days." };
+  }
 
   const intent = String(formData.get("intent") ?? "save");
   const collectionIdRaw = String(formData.get("collectionId") ?? "");
@@ -164,12 +170,18 @@ export async function savePerfumeAction(formData: FormData) {
   let imageUrl = useAtelierArt ? suggestedPerfumeArt(name) : existing?.imageUrl ?? null;
   if (uploaded) imageUrl = uploaded;
 
+  const bidEndsAt = saleType === "bid"
+    ? existing?.bidEndsAt && existing.bidEndsAt > new Date()
+      ? existing.bidEndsAt
+      : new Date(Date.now() + durationHours * 60 * 60 * 1000)
+    : null;
   const payload = {
     brand,
     name,
     saleType,
     priceCents: saleType === "buy" ? priceCents! : minBidCents!,
     minBidCents: saleType === "bid" ? minBidCents! : null,
+    bidEndsAt,
     collectionId,
     kind,
     fill,
@@ -251,9 +263,10 @@ export async function importPerfumesAction(formData: FormData) {
     const saleType = valueFor(row, "listing_type").toLowerCase() === "bid" ? "bid" : "buy";
     const kind = valueFor(row, "kind").toLowerCase();
     const ml = Number(valueFor(row, "ml"));
+    const bidDurationHours = Number(valueFor(row, "bid_duration_hours") || "24");
     const amount = rupeesToPaise(valueFor(row, saleType === "bid" ? "min_bid_inr" : "price_inr"));
-    if (!name || !["retail", "tester", "partial", "decant"].includes(kind) || !Number.isFinite(ml) || ml <= 0 || amount == null || amount <= 0) issues.push(`Row ${index + 2}`);
-    return { name, saleType, kind, ml, amount, row };
+    if (!name || !["retail", "tester", "partial", "decant"].includes(kind) || !Number.isFinite(ml) || ml <= 0 || amount == null || amount <= 0 || (saleType === "bid" && (!Number.isInteger(bidDurationHours) || bidDurationHours < 1 || bidDurationHours > 24 * 30))) issues.push(`Row ${index + 2}`);
+    return { name, saleType, kind, ml, amount, bidDurationHours, row };
   });
   if (issues.length) fail(`${issues.slice(0, 5).join(", ")} need a name, valid listing type, kind, ml, and INR price or minimum bid.`);
   const existingCollections = await prisma.collection.findMany({ where: { ownerId: user.id, NOT: { status: "deleted" } }, select: { id: true, name: true } });
@@ -271,7 +284,7 @@ export async function importPerfumesAction(formData: FormData) {
       }
     }
     const shipping = ["true", "yes", "1"].includes(valueFor(item.row, "shipping_included").toLowerCase());
-    await prisma.perfume.create({ data: { ownerId: user.id, collectionId, brand: valueFor(item.row, "brand") || null, name: item.name, saleType: item.saleType, priceCents: item.amount!, minBidCents: item.saleType === "bid" ? item.amount : null, kind: item.kind, ml: item.ml, shippingIncluded: shipping, description: valueFor(item.row, "description") || null, topNotes: valueFor(item.row, "top_notes") || null, middleNotes: valueFor(item.row, "middle_notes") || null, baseNotes: valueFor(item.row, "base_notes") || null, links: "[]", imageUrl: suggestedPerfumeArt(item.name) } });
+    await prisma.perfume.create({ data: { ownerId: user.id, collectionId, brand: valueFor(item.row, "brand") || null, name: item.name, saleType: item.saleType, priceCents: item.amount!, minBidCents: item.saleType === "bid" ? item.amount : null, bidEndsAt: item.saleType === "bid" ? new Date(Date.now() + item.bidDurationHours * 60 * 60 * 1000) : null, kind: item.kind, ml: item.ml, shippingIncluded: shipping, description: valueFor(item.row, "description") || null, topNotes: valueFor(item.row, "top_notes") || null, middleNotes: valueFor(item.row, "middle_notes") || null, baseNotes: valueFor(item.row, "base_notes") || null, links: "[]", imageUrl: suggestedPerfumeArt(item.name) } });
   }
   revalidateOwner(user.username);
   redirect(`/me/perfumes?notice=${encodeURIComponent(`${parsed.length} perfume${parsed.length === 1 ? "" : "s"} imported as drafts.`)}`);

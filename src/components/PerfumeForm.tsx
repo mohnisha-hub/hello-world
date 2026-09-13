@@ -17,6 +17,7 @@ type Perfume = {
   saleType?: string | null;
   priceCents: number;
   minBidCents?: number | null;
+  bidEndsAt?: Date | string | null;
   unitsAvailable?: number;
   imageUrl: string | null;
   kind: string | null;
@@ -54,6 +55,8 @@ export function PerfumeForm({
       ? String((perfume.minBidCents ?? perfume.priceCents) / 100)
       : "",
   );
+  const [bidDuration, setBidDuration] = useState("24");
+  const [bidDurationUnit, setBidDurationUnit] = useState<"hours" | "days">("hours");
   const [kind, setKind] = useState(perfume?.kind === "bottle" ? "retail" : perfume?.kind ?? "");
   const fill = null;
   const [ml, setMl] = useState(perfume?.ml != null ? String(perfume.ml) : "");
@@ -215,18 +218,13 @@ export function PerfumeForm({
         Accept bids
       </label>
       {acceptBids ? (
-        <label className="field">
+        <div className="grid gap-3 sm:grid-cols-2"><label className="field">
           Minimum bid (INR)
-          <input
-            name="minBid"
-            type="number"
-            min="1"
-            step="0.01"
-            required
-            value={minBid}
-            onChange={(e) => setMinBid(e.target.value)}
-          />
-        </label>
+          <input name="minBid" type="number" min="1" step="0.01" required value={minBid} onChange={(e) => setMinBid(e.target.value)} />
+        </label><label className="field">
+          {perfume?.bidEndsAt ? "Bid duration for a new round" : "Bid duration"}
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"><input name="bidDuration" type="number" min="1" max="30" required value={bidDuration} onChange={(e) => setBidDuration(e.target.value)} /><select name="bidDurationUnit" value={bidDurationUnit} onChange={(e) => setBidDurationUnit(e.target.value as "hours" | "days")}><option value="hours">hours</option><option value="days">days</option></select></div>
+        </label>{perfume?.bidEndsAt ? <p className="sm:col-span-2 text-xs text-muted">Current round ends {new Date(perfume.bidEndsAt).toLocaleString()}. An active round keeps its existing deadline.</p> : <p className="sm:col-span-2 text-xs text-muted">At the deadline, the highest valid bid wins and Atelier opens the deal chat for both of you.</p>}</div>
       ) : (
         <label className="field">
           Price (INR)

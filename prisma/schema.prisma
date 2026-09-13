@@ -63,6 +63,7 @@ model Perfume {
   saleType         String      @default("buy")
   priceCents       Int
   minBidCents      Int?
+  bidEndsAt        DateTime?
   unitsAvailable   Int         @default(1)
   imageUrl         String?
   kind             String?
@@ -85,6 +86,7 @@ model Perfume {
 
   @@index([ownerId, status])
   @@index([collectionId])
+  @@index([bidEndsAt])
 }
 
 model Pin {

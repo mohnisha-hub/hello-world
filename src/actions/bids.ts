@@ -7,6 +7,7 @@ import { requireUser, syncCollectionStatus } from "@/lib/listings";
 import { rupeesToPaise, formatMoney } from "@/lib/money";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { notify } from "@/lib/notifications";
+import { settleExpiredAuctions } from "@/lib/auctions";
 
 async function closeOtherBids(perfumeId: string, keepBidId?: string) {
   await prisma.bid.updateMany({
@@ -32,10 +33,12 @@ export async function placeBidAction(formData: FormData) {
   const perfumeId = String(formData.get("perfumeId"));
   const amountCents = rupeesToPaise(String(formData.get("amount") ?? ""));
   if (amountCents == null || amountCents <= 0) return { error: "Enter a bid amount in INR." };
+  await settleExpiredAuctions();
   const perfume = await prisma.perfume.findUnique({ where: { id: perfumeId } });
   if (!perfume || perfume.status !== "published") return { error: "This listing is not open." };
   if (perfume.ownerId === user.id) return { error: "You cannot bid on your own perfume." };
   if (!isBidListing(perfume.saleType)) return { error: "This perfume is buy-only." };
+  if (perfume.bidEndsAt && perfume.bidEndsAt <= new Date()) return { error: "Bidding for this perfume has ended." };
   const acceptedBid = await prisma.bid.findFirst({ where: { perfumeId, kind: "bid", status: "accepted" }, select: { id: true } });
   if (acceptedBid) return { error: "The seller has accepted an offer and is completing this deal." };
   const minimum = listingAmountCents(perfume);
@@ -145,11 +148,13 @@ export async function declineBidAction(formData: FormData) {
 export async function acceptBidAction(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id"));
+  await settleExpiredAuctions();
   const bid = await prisma.bid.findFirst({
     where: { id, sellerId: user.id, status: "open", kind: "bid" },
     include: { perfume: { include: { owner: true } }, bidder: true, conversation: true },
   });
   if (!bid) return { error: "Bid not found." };
+  if (bid.perfume.bidEndsAt && bid.perfume.bidEndsAt <= new Date()) return { error: "This auction has ended and is being settled." };
   const conversation = await prisma.$transaction(async (tx) => {
     await tx.bid.update({ where: { id }, data: { status: "accepted" } });
     const convo =
