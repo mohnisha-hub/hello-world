@@ -434,3 +434,8 @@ html[data-theme="light"] .card-art { color: #fffaf2; }
     transform: translate3d(-110vw, var(--cow-wobble), 0) rotate(var(--cow-tilt));
   }
 }
+
+/* Marketplace discovery remains available without competing with active results. */
+.search-collections-collapsible { padding: .75rem; }
+.search-collections-collapsible .search-collection-strip { margin-top: .65rem; }
+.nav-utility-text { display: inline-flex; width: auto; height: auto; padding: .45rem .6rem; font-size: .875rem; }
