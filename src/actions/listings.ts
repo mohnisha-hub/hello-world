@@ -211,6 +211,69 @@ export async function savePerfumeAction(formData: FormData) {
   redirect(`/p/${perfume.id}`);
 }
 
+function parseCsv(text: string) {
+  const rows: string[][] = [];
+  let row: string[] = [], cell = "", quoted = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === '"' && quoted && text[index + 1] === '"') { cell += '"'; index += 1; }
+    else if (char === '"') quoted = !quoted;
+    else if (char === "," && !quoted) { row.push(cell.trim()); cell = ""; }
+    else if ((char === "\n" || char === "\r") && !quoted) { if (char === "\r" && text[index + 1] === "\n") index += 1; row.push(cell.trim()); if (row.some(Boolean)) rows.push(row); row = []; cell = ""; }
+    else cell += char;
+  }
+  row.push(cell.trim()); if (row.some(Boolean)) rows.push(row);
+  return rows;
+}
+
+export async function importPerfumesAction(formData: FormData) {
+  const user = await requireUser();
+  const fail = (message: string): never => redirect(`/me/perfumes/import?notice=${encodeURIComponent(message)}`);
+  const file = formData.get("file") as File | null;
+  if (!file) fail("Upload the Atelier CSV template as a .csv file.");
+  const csvFile = file as File;
+  if (!csvFile.name.toLowerCase().endsWith(".csv")) fail("Upload the Atelier CSV template as a .csv file.");
+  if (csvFile.size > 1024 * 1024) fail("Keep CSV uploads under 1 MB.");
+  const rows = parseCsv(await csvFile.text());
+  if (rows.length < 2) fail("Add at least one perfume row below the template headings.");
+  const headers = rows[0].map((header) => header.toLowerCase().replace(/\s+/g, "_"));
+  const required = ["name", "listing_type", "kind", "ml"];
+  if (required.some((header) => !headers.includes(header))) fail("This file is missing a required template column.");
+  const records = rows.slice(1);
+  if (records.length > 100) fail("Import up to 100 perfumes at a time.");
+  const valueFor = (row: string[], key: string) => row[headers.indexOf(key)]?.trim() ?? "";
+  const issues: string[] = [];
+  const parsed = records.map((row, index) => {
+    const name = valueFor(row, "name");
+    const saleType = valueFor(row, "listing_type").toLowerCase() === "bid" ? "bid" : "buy";
+    const kind = valueFor(row, "kind").toLowerCase();
+    const ml = Number(valueFor(row, "ml"));
+    const amount = rupeesToPaise(valueFor(row, saleType === "bid" ? "min_bid_inr" : "price_inr"));
+    if (!name || !["retail", "tester", "partial", "decant"].includes(kind) || !Number.isFinite(ml) || ml <= 0 || amount == null || amount <= 0) issues.push(`Row ${index + 2}`);
+    return { name, saleType, kind, ml, amount, row };
+  });
+  if (issues.length) fail(`${issues.slice(0, 5).join(", ")} need a name, valid listing type, kind, ml, and INR price or minimum bid.`);
+  const existingCollections = await prisma.collection.findMany({ where: { ownerId: user.id, NOT: { status: "deleted" } }, select: { id: true, name: true } });
+  const collectionIds = new Map(existingCollections.map((collection) => [collection.name.toLowerCase(), collection.id]));
+  for (const item of parsed) {
+    const collectionName = valueFor(item.row, "collection");
+    let collectionId: string | null = null;
+    if (collectionName) {
+      const key = collectionName.toLowerCase();
+      collectionId = collectionIds.get(key) ?? null;
+      if (!collectionId) {
+        const collection = await prisma.collection.create({ data: { ownerId: user.id, name: collectionName, photoUrl: suggestedCollectionArt(collectionName) } });
+        collectionId = collection.id;
+        collectionIds.set(key, collection.id);
+      }
+    }
+    const shipping = ["true", "yes", "1"].includes(valueFor(item.row, "shipping_included").toLowerCase());
+    await prisma.perfume.create({ data: { ownerId: user.id, collectionId, brand: valueFor(item.row, "brand") || null, name: item.name, saleType: item.saleType, priceCents: item.amount!, minBidCents: item.saleType === "bid" ? item.amount : null, kind: item.kind, ml: item.ml, shippingIncluded: shipping, description: valueFor(item.row, "description") || null, topNotes: valueFor(item.row, "top_notes") || null, middleNotes: valueFor(item.row, "middle_notes") || null, baseNotes: valueFor(item.row, "base_notes") || null, links: "[]", imageUrl: suggestedPerfumeArt(item.name) } });
+  }
+  revalidateOwner(user.username);
+  redirect(`/me/perfumes?notice=${encodeURIComponent(`${parsed.length} perfume${parsed.length === 1 ? "" : "s"} imported as drafts.`)}`);
+}
+
 export async function deletePerfumeAction(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id"));
