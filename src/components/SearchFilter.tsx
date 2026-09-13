@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { formatMoney, formatPricePerMl } from "@/lib/money";
 import { listingAmountCents, isBidListing } from "@/lib/sale";
 import { searchPerfumesAndGroupUsers, type SearchableCollection, type SearchablePerfume } from "@/lib/search";
@@ -15,7 +16,9 @@ type Sort = "newest" | "price-low" | "price-high" | "per-ml-low" | "per-ml-high"
 const PAGE_SIZE = 12;
 
 export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }: { perfumes: SearchablePerfume[]; collections?: SearchableCollection[]; allUsers: SearchablePerfume["owner"][]; ratingMap: Record<string, { average: number; count: number } | null> }) {
-  const [query, setQuery] = useState("");
+  const searchParams = useSearchParams();
+  const requestedQuery = searchParams.get("q") || "";
+  const [query, setQuery] = useState(requestedQuery);
   const [condition, setCondition] = useState<Condition>("all");
   const [listing, setListing] = useState<"all" | "buy" | "bid">("all");
   const [brand, setBrand] = useState("all");
@@ -25,6 +28,7 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
   const [sort, setSort] = useState<Sort>("newest");
   const [view, setView] = useState<"list" | "cards">("list");
   const [page, setPage] = useState(1);
+  useEffect(() => { setQuery(requestedQuery); }, [requestedQuery]);
   const brands = useMemo(() => Array.from(new Set(perfumes.map((p) => p.brand).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
   const locations = useMemo(() => Array.from(new Set(perfumes.map((p) => p.owner.location).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
   const matchedPerfumes = useMemo(() => {

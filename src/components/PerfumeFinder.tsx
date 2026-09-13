@@ -7,7 +7,9 @@ import { FRAGRANCE_CATALOG, fragranceCatalogKey, type FragranceEntry } from "@/l
 
 const STARTER_NOTES = ["Vanilla", "Oud", "Tobacco", "Saffron", "Rose", "Jasmine", "Bergamot", "Sandalwood", "Musk", "Fig", "Coffee", "Amber"];
 
-export function PerfumeFinder({ signedIn }: { signedIn: boolean }) {
+type LiveListing = { brand: string | null; name: string };
+
+export function PerfumeFinder({ signedIn, liveListings }: { signedIn: boolean; liveListings: LiveListing[] }) {
   const [notes, setNotes] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const results = useMemo(() => recommend(FRAGRANCE_CATALOG, notes, query), [notes, query]);
@@ -16,15 +18,16 @@ export function PerfumeFinder({ signedIn }: { signedIn: boolean }) {
     <div className="perfume-finder-heading"><div><p className="eyebrow">PERFUME FINDER</p><h2 className="section-heading">Find a scent for your story.</h2><p>Choose notes you gravitate toward; recommendations come from Atelier&apos;s saved fragrance catalogue.</p></div></div>
     <input className="perfume-finder-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a perfume or house" aria-label="Search perfume finder" />
     <div className="perfume-note-picker" aria-label="Preferred notes">{STARTER_NOTES.map((note) => <button key={note} type="button" onClick={() => toggle(note)} className={notes.includes(note) ? "is-active" : ""}>{note}</button>)}</div>
-    <div className="perfume-finder-results">{results.slice(0, 12).map((entry) => <FinderResult key={fragranceCatalogKey(entry)} entry={entry} signedIn={signedIn} />)}</div>
+    <div className="perfume-finder-results">{results.slice(0, 6).map((entry) => <FinderResult key={fragranceCatalogKey(entry)} entry={entry} signedIn={signedIn} hasLiveListing={hasLiveListing(entry, liveListings)} />)}</div>
   </section>;
 }
 
-function FinderResult({ entry, signedIn }: { entry: FragranceEntry; signedIn: boolean }) {
+function FinderResult({ entry, signedIn, hasLiveListing }: { entry: FragranceEntry; signedIn: boolean; hasLiveListing: boolean }) {
   const key = fragranceCatalogKey(entry);
+  const marketplaceQuery = encodeURIComponent(`${entry.brand} ${entry.name}`);
   return <article className="finder-result">
     <div><p className="eyebrow">{entry.brand}</p><h3>{entry.name}</h3><p className="finder-notes">{[...entry.top, ...entry.middle, ...entry.base].slice(0, 5).join(" · ")}</p></div>
-    <div className="finder-actions">{signedIn ? <><FinderSaveButton kind="shelf" catalogKey={key} /><FinderSaveButton kind="wishlist" catalogKey={key} /></> : <a className="card-action" href="/login?from=/explore">Sign in to save</a>}</div>
+    <div className="finder-actions">{hasLiveListing ? <a className="card-action finder-live-listing" href={`/explore?q=${marketplaceQuery}#marketplace`}>Live listings ↗</a> : null}{signedIn ? <><FinderSaveButton kind="shelf" catalogKey={key} /><FinderSaveButton kind="wishlist" catalogKey={key} /></> : <a className="card-action" href="/login?from=/explore">Sign in to save</a>}</div>
   </article>;
 }
 
@@ -51,4 +54,15 @@ function recommend(entries: FragranceEntry[], notes: string[], query: string) {
     const score = notes.reduce((total, note) => total + (text.includes(note.toLowerCase()) ? 10 : 0), 0) + (search && text.includes(search) ? 20 : 0) + entry.rating;
     return { entry, score };
   }).filter(({ entry }) => !search || `${entry.brand} ${entry.name}`.toLowerCase().includes(search) || [...entry.top, ...entry.middle, ...entry.base].join(" ").toLowerCase().includes(search)).sort((a, b) => b.score - a.score || a.entry.name.localeCompare(b.entry.name)).map(({ entry }) => entry);
+}
+
+function hasLiveListing(entry: FragranceEntry, listings: LiveListing[]) {
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const label = normalize(`${entry.brand} ${entry.name}`);
+  const name = normalize(entry.name);
+  return listings.some((listing) => {
+    const listingName = normalize(listing.name);
+    const listingBrand = normalize(listing.brand || "");
+    return listingBrand === normalize(entry.brand) && (listingName === name || listingName === label || listingName.includes(name));
+  });
 }
