@@ -15,13 +15,18 @@ import { DATABASE_UNAVAILABLE, isDatabaseConfigured } from "@/lib/db";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
+const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+
+function normalizedUsername(value: FormDataEntryValue | null) {
+  return String(value ?? "").trim().toLowerCase();
+}
 
 function safePath(from: string) {
   return from.startsWith("/") && !from.startsWith("//") ? from : "/me/profile";
 }
 
 export async function loginAction(formData: FormData) {
-  const username = String(formData.get("username") ?? "").trim();
+  const username = normalizedUsername(formData.get("username"));
   const password = String(formData.get("password") ?? "");
   const safeFrom = safePath(String(formData.get("from") ?? "/me/profile"));
   if (!username || !password) return { error: "Username and password are required." };
@@ -47,11 +52,11 @@ export async function googleLoginAction(formData: FormData) {
 }
 
 export async function signupAction(formData: FormData) {
-  const username = String(formData.get("username") ?? "").trim();
+  const username = normalizedUsername(formData.get("username"));
   const password = String(formData.get("password") ?? "");
   const safeFrom = safePath(String(formData.get("from") ?? "/me/profile"));
   if (!USERNAME_RE.test(username)) return { error: "Username must be 3–24 letters, numbers, or underscores." };
-  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (!PASSWORD_RE.test(password)) return { error: "Password must be 8+ characters and include a letter and a number." };
   if (!isDatabaseConfigured()) return { error: DATABASE_UNAVAILABLE };
   try {
     const taken = await prisma.user.findUnique({ where: { username } });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatMoney, formatPricePerMl } from "@/lib/money";
 import { listingAmountCents, isBidListing } from "@/lib/sale";
@@ -12,6 +12,7 @@ type Condition = (typeof CONDITIONS)[number];
 type PriceBand = "all" | "under-3000" | "3000-10000" | "10000-25000" | "25000-plus";
 type SizeBand = "all" | "under-10" | "10-30" | "30-75" | "75-plus";
 type Sort = "newest" | "price-low" | "price-high" | "per-ml-low" | "per-ml-high";
+const PAGE_SIZE = 12;
 
 export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }: { perfumes: SearchablePerfume[]; collections?: SearchableCollection[]; allUsers: SearchablePerfume["owner"][]; ratingMap: Record<string, { average: number; count: number } | null> }) {
   const [query, setQuery] = useState("");
@@ -23,6 +24,7 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
   const [price, setPrice] = useState<PriceBand>("all");
   const [sort, setSort] = useState<Sort>("newest");
   const [view, setView] = useState<"list" | "cards">("list");
+  const [page, setPage] = useState(1);
   const brands = useMemo(() => Array.from(new Set(perfumes.map((p) => p.brand).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
   const locations = useMemo(() => Array.from(new Set(perfumes.map((p) => p.owner.location).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
   const matchedPerfumes = useMemo(() => {
@@ -44,6 +46,10 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
       return 0;
     });
   }, [brand, condition, listing, location, perfumes, price, query, ratingMap, size, sort]);
+  useEffect(() => { setPage(1); }, [brand, condition, listing, location, price, query, size, sort]);
+  const pageCount = Math.max(1, Math.ceil(matchedPerfumes.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const visiblePerfumes = matchedPerfumes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const hasFilters = Boolean(query || condition !== "all" || listing !== "all" || brand !== "all" || location !== "all" || size !== "all" || price !== "all" || sort !== "newest");
   const clear = () => { setQuery(""); setCondition("all"); setListing("all"); setBrand("all"); setLocation("all"); setSize("all"); setPrice("all"); setSort("newest"); };
 
@@ -65,10 +71,18 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
       <div className="search-results-heading"><div><p className="eyebrow">MARKETPLACE</p><h2>{matchedPerfumes.length} listing{matchedPerfumes.length === 1 ? "" : "s"}</h2></div><div className="search-result-tools"><label className="search-sort">Sort<select value={sort} onChange={(event) => setSort(event.target.value as Sort)}><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="per-ml-low">Price/ml: low to high</option><option value="per-ml-high">Price/ml: high to low</option></select></label><div className="search-view-toggle"><button type="button" className={view === "list" ? "is-active" : ""} onClick={() => setView("list")}>List</button><button type="button" className={view === "cards" ? "is-active" : ""} onClick={() => setView("cards")}>Cards</button></div></div></div>
       {hasFilters ? <button type="button" className="search-clear" onClick={clear}>Clear filters</button> : null}
       {!matchedPerfumes.length ? <p className="search-empty">No perfume listings matched. Try a perfume, a house, a note, or broaden your filters.</p> : null}
-      <div className={view === "list" ? "search-listings" : "search-card-grid"}>{matchedPerfumes.map((p) => <SearchListing key={p.id} perfume={p} card={view === "cards"} />)}</div>
+      <div className={view === "list" ? "search-listings" : "search-card-grid"}>{visiblePerfumes.map((p) => <SearchListing key={p.id} perfume={p} card={view === "cards"} />)}</div>
+      <ListingPagination page={currentPage} pageCount={pageCount} count={matchedPerfumes.length} onPageChange={setPage} />
       {!hasFilters ? <details className="search-collectors"><summary>Browse collectors <span>({allUsers.length})</span></summary><div>{allUsers.map((u) => <Link key={u.id} href={`/u/${u.username}`}>@{u.username}<small>{u.location || "Somewhere scented"}</small></Link>)}</div></details> : null}
     </section>
   </div>;
+}
+
+function ListingPagination({ page, pageCount, count, onPageChange }: { page: number; pageCount: number; count: number; onPageChange: (page: number) => void }) {
+  if (pageCount < 2) return null;
+  const start = (page - 1) * PAGE_SIZE + 1;
+  const end = Math.min(page * PAGE_SIZE, count);
+  return <nav className="listing-pagination" aria-label="Listing pages"><span>{start}–{end} of {count}</span><div><button type="button" onClick={() => onPageChange(page - 1)} disabled={page === 1}>Previous</button>{Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => <button key={number} type="button" className={number === page ? "is-active" : ""} onClick={() => onPageChange(number)} aria-current={number === page ? "page" : undefined}>{number}</button>)}<button type="button" onClick={() => onPageChange(page + 1)} disabled={page === pageCount}>Next</button></div></nav>;
 }
 
 function SearchSelect({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: React.ReactNode }) { return <label className="search-select"><span>{label}</span><select value={value} onChange={(event) => onChange(event.target.value)}>{children}</select></label>; }

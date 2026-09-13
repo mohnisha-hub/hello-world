@@ -12,8 +12,10 @@ import { formatMoney } from "@/lib/money";
 import { saveScentShowcaseAction } from "@/actions/profile";
 import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 
-export default async function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
+export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ username: string }>; searchParams: Promise<{ view?: string; availablePage?: string; bidsPage?: string }> }) {
   const { username } = await params;
+  const listingParams = await searchParams;
+  const listingView = listingParams.view === "list" ? "list" : "cards";
   const session = await auth();
   const user = await prisma.user.findUnique({
     where: { username },
@@ -21,7 +23,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       pins: true,
       wishlist: true,
       collections: { include: { perfumes: true } },
-      perfumes: true,
+      perfumes: { orderBy: { publishedAt: "desc" } },
     },
   });
   if (!user) notFound();
@@ -61,6 +63,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     : [];
   const bidHighByPerfume = Object.fromEntries(bidHighs.map((bid) => [bid.perfumeId, bid._max.amountCents]));
   const availableListings = user.perfumes.filter((perfume) => perfume.status === "published");
+  const availablePaging = paginate(availablePerfumes, readPage(listingParams.availablePage));
+  const bidPaging = paginate(openBidListings, readPage(listingParams.bidsPage));
   const scentShowcase = parseScentShowcase(user.scentShowcase);
   const showcasePerfumes = new Map(user.perfumes.filter((perfume) => perfume.status === "published" || perfume.status === "sold").map((perfume) => [perfume.id, perfume]));
   const topThree = scentShowcase.top3.flatMap((id) => {
@@ -128,28 +132,28 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             ) : <EmptyState text="No published collections yet." />}
           </ProfileSection>
 
-          <ProfileSection title="Available now" detail="Ready to buy" tools={isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}>
+          <ProfileSection title="Available now" detail="Ready to buy" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={availablePaging.page} pageKey="availablePage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
             {availablePerfumes.length ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {availablePerfumes.map((perfume) => (
+              <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>
+                {availablePaging.items.map((perfume) => (
                   <div key={perfume.id}>
-                    <PerfumeCard perfume={perfume} href={`/p/${perfume.id}`} showStatus={isOwner} />
+                    <ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />
                     {isOwner ? <OwnerActions targetType="perfume" targetId={perfume.id} pinned={pinIds.has(perfume.id)} editHref={`/me/perfumes/${perfume.id}/edit`} canSell /> : null}
                   </div>
                 ))}
-              </div>
+              </div><ProfilePagination username={user.username} pageKey="availablePage" paging={availablePaging} view={listingView} /></>
             ) : <EmptyState text="No buy-now perfumes at the moment." />}
           </ProfileSection>
 
-          <ProfileSection title="Bidding floor" detail={isOwner ? "Offers on your perfumes" : "Make an offer"}>
+          <ProfileSection title="Bidding floor" detail={isOwner ? "Offers on your perfumes" : "Make an offer"} tools={<ProfileListingControls username={user.username} view={listingView} page={bidPaging.page} pageKey="bidsPage" />}>
             {openBidListings.length ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {openBidListings.map((perfume) => {
+              <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>
+                {bidPaging.items.map((perfume) => {
                   const minimum = listingAmountCents(perfume);
                   const highest = bidHighByPerfume[perfume.id] ?? null;
                   return (
                     <div key={perfume.id} className="space-y-2">
-                      <PerfumeCard perfume={perfume} href={`/p/${perfume.id}`} showStatus={isOwner} />
+                      <ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />
                       <div className="rounded-xl border border-line bg-paper px-3 py-2.5 text-sm">
                         <p className="text-muted">{highest ? `Current high ${formatMoney(highest)}` : `Minimum bid ${formatMoney(minimum)}`}</p>
                         {!isOwner && session?.user ? (
@@ -164,7 +168,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                     </div>
                   );
                 })}
-              </div>
+              </div><ProfilePagination username={user.username} pageKey="bidsPage" paging={bidPaging} view={listingView} /></>
             ) : <EmptyState text="No active bid listings right now." />}
           </ProfileSection>
 
@@ -234,6 +238,14 @@ function SectionTools({ addHref, editHref, addLabel, editLabel }: { addHref: str
 function EmptyState({ text }: { text: string }) {
   return <p className="rounded-xl border border-dashed border-line px-4 py-5 text-sm text-muted">{text}</p>;
 }
+
+const PROFILE_PAGE_SIZE = 12;
+function readPage(value?: string) { const page = Number(value); return Number.isInteger(page) && page > 0 ? page : 1; }
+function paginate<T>(items: T[], requestedPage: number) { const pageCount = Math.max(1, Math.ceil(items.length / PROFILE_PAGE_SIZE)); const page = Math.min(requestedPage, pageCount); return { items: items.slice((page - 1) * PROFILE_PAGE_SIZE, page * PROFILE_PAGE_SIZE), page, pageCount, count: items.length }; }
+function listingHref(username: string, view: "list" | "cards", pageKey: "availablePage" | "bidsPage", page: number) { return `/u/${username}?view=${view}&${pageKey}=${page}`; }
+function ProfileListingControls({ username, view, page, pageKey }: { username: string; view: "list" | "cards"; page: number; pageKey: "availablePage" | "bidsPage" }) { return <div className="search-view-toggle" aria-label="Listing display"><Link className={view === "list" ? "is-active" : ""} href={listingHref(username, "list", pageKey, page)}>List</Link><Link className={view === "cards" ? "is-active" : ""} href={listingHref(username, "cards", pageKey, page)}>Cards</Link></div>; }
+function ProfilePagination({ username, pageKey, paging, view }: { username: string; pageKey: "availablePage" | "bidsPage"; paging: { page: number; pageCount: number; count: number }; view: "list" | "cards" }) { if (paging.pageCount < 2) return null; const start = (paging.page - 1) * PROFILE_PAGE_SIZE + 1; const end = Math.min(paging.page * PROFILE_PAGE_SIZE, paging.count); return <nav className="listing-pagination" aria-label="Profile listing pages"><span>{start}–{end} of {paging.count}</span><div>{paging.page > 1 ? <Link href={listingHref(username, view, pageKey, paging.page - 1)}>Previous</Link> : <span>Previous</span>}{Array.from({ length: paging.pageCount }, (_, index) => index + 1).map((number) => <Link key={number} className={number === paging.page ? "is-active" : ""} aria-current={number === paging.page ? "page" : undefined} href={listingHref(username, view, pageKey, number)}>{number}</Link>)}{paging.page < paging.pageCount ? <Link href={listingHref(username, view, pageKey, paging.page + 1)}>Next</Link> : <span>Next</span>}</div></nav>; }
+function ProfilePerfumeDisplay({ perfume, view, username, showStatus }: { perfume: Parameters<typeof PerfumeCard>[0]["perfume"]; view: "list" | "cards"; username: string; showStatus: boolean }) { if (view === "cards") return <PerfumeCard perfume={perfume} href={`/p/${perfume.id}`} showStatus={showStatus} />; const amount = listingAmountCents(perfume); return <Link href={`/p/${perfume.id}`} className="search-listing"><span className="card-art art-tone-0" aria-hidden="true">{perfume.imageUrl ? <>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={perfume.imageUrl} alt="" /></> : <span>{perfume.name.slice(0, 1)}</span>}</span><span className="search-listing-copy"><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{username}</em></span><span className="search-listing-details">{perfume.kind ? `${perfume.kind} · ` : ""}{perfume.ml ? `${perfume.ml} ml` : ""}</span><span className="search-listing-price">{isBidListing(perfume.saleType) ? `From ${formatMoney(amount)}` : formatMoney(amount)}</span><span className="listing-live-dot" aria-label="Available" /></Link>; }
 
 function WishlistMiniCard({ href, title, meta }: { href: string; title: string; meta: string }) {
   return <Link href={href} className="block rounded-lg border border-line px-3 py-2.5 transition-colors hover:border-line-strong hover:bg-bg"><p className="line-clamp-1 text-sm font-medium">{title}</p><p className="mt-0.5 text-xs text-muted">{meta}</p></Link>;
