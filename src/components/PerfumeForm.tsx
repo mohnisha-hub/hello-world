@@ -353,7 +353,7 @@ export function PerfumeForm({
       <div className="space-y-2">
         <p className="text-sm">External links</p>
         {links.map((link, i) => (
-          <div key={i} className="grid grid-cols-2 gap-2">
+          <div key={i} className="grid gap-2 sm:grid-cols-2">
             <input
               name="linkLabel"
               placeholder="Label"
