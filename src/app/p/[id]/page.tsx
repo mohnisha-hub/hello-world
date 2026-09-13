@@ -65,10 +65,10 @@ export default async function PerfumePage({
 
   return (
     <article className="grid gap-8 md:grid-cols-2">
-      <div className="card">
+      <div className="listing-hero-media card">
         {perfume.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={perfume.imageUrl} alt="" className="w-full object-cover" />
+          <img src={perfume.imageUrl} alt="" />
         ) : (
           <div className="flex h-80 items-center justify-center font-serif text-4xl">{perfume.name}</div>
         )}
