@@ -5,6 +5,7 @@ import { logoutAction } from "@/actions/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NavMenu } from "@/components/NavMenu";
 import { prisma } from "@/lib/prisma";
+import { MessageNavLink } from "@/components/MessageNavLink";
 
 export async function Nav() {
   let session = null;
@@ -27,7 +28,7 @@ export async function Nav() {
           {navUser ? (
             <>
               <Link className="nav-link" href={`/u/${navUser.username}`}>My profile</Link>
-              <Link className="nav-link" href="/me/messages">Messages</Link>
+              <MessageNavLink />
               <NavMenu />
               <NotificationBell />
               <form action={logoutAction}>

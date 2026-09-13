@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatMoney, formatPricePerMl } from "@/lib/money";
 import { listingAmountCents, isBidListing } from "@/lib/sale";
-import { searchCollections, searchPerfumesAndGroupUsers, type SearchableCollection, type SearchablePerfume } from "@/lib/search";
+import { searchPerfumesAndGroupUsers, type SearchableCollection, type SearchablePerfume } from "@/lib/search";
 
 const POPULAR_NOTES = ["Vanilla", "Oud", "Santal", "Tobacco", "Saffron", "Cognac", "Honey", "Fig", "Pineapple", "Amber"];
 const CONDITIONS = ["all", "retail", "tester", "partial", "decant"] as const;
@@ -44,7 +44,6 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
       return 0;
     });
   }, [brand, condition, listing, location, perfumes, price, query, ratingMap, size, sort]);
-  const matchedCollections = useMemo(() => query.trim() ? searchCollections(collections, query) : collections, [collections, query]);
   const hasFilters = Boolean(query || condition !== "all" || listing !== "all" || brand !== "all" || location !== "all" || size !== "all" || price !== "all" || sort !== "newest");
   const clear = () => { setQuery(""); setCondition("all"); setListing("all"); setBrand("all"); setLocation("all"); setSize("all"); setPrice("all"); setSort("newest"); };
 
@@ -54,18 +53,18 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
       <div className="search-note-row"><span className="eyebrow">Popular notes</span>{POPULAR_NOTES.map((note) => <button type="button" key={note} className={query.toLowerCase() === note.toLowerCase() ? "is-active" : ""} onClick={() => setQuery(query.toLowerCase() === note.toLowerCase() ? "" : note)}>{note}</button>)}</div>
       <div className="search-filter-grid" aria-label="Marketplace filters">
         <SearchSelect label="Listing" value={listing} onChange={(value) => setListing(value as typeof listing)}><option value="all">All listings</option><option value="buy">Buy now</option><option value="bid">Accepting bids</option></SearchSelect>
-        <SearchSelect label="Condition" value={condition} onChange={(value) => setCondition(value as Condition)}>{CONDITIONS.map((o) => <option key={o} value={o}>{o === "all" ? "Any condition" : o[0].toUpperCase() + o.slice(1)}</option>)}</SearchSelect>
+        <SearchSelect label="Type" value={condition} onChange={(value) => setCondition(value as Condition)}>{CONDITIONS.map((o) => <option key={o} value={o}>{o === "all" ? "Any type" : o[0].toUpperCase() + o.slice(1)}</option>)}</SearchSelect>
         <SearchSelect label="Size" value={size} onChange={(value) => setSize(value as SizeBand)}><option value="all">Any size</option><option value="under-10">Under 10 ml</option><option value="10-30">10–30 ml</option><option value="30-75">30–75 ml</option><option value="75-plus">75+ ml</option></SearchSelect>
         <SearchSelect label="Price" value={price} onChange={(value) => setPrice(value as PriceBand)}><option value="all">Any price</option><option value="under-3000">Under ₹3,000</option><option value="3000-10000">₹3,000–10,000</option><option value="10000-25000">₹10,000–25,000</option><option value="25000-plus">₹25,000+</option></SearchSelect>
         <SearchSelect label="Brand" value={brand} onChange={setBrand}><option value="all">All brands</option>{brands.map((o) => <option key={o} value={o}>{o}</option>)}</SearchSelect>
         <SearchSelect label="Location" value={location} onChange={setLocation}><option value="all">Anywhere</option>{locations.map((o) => <option key={o} value={o}>{o}</option>)}</SearchSelect>
       </div>
     </div>
+    {collections.length ? <div className="search-collection-group search-collection-strip"><p className="eyebrow">LIVE COLLECTIONS</p>{collections.slice(0, 6).map((c) => <Link key={c.id} href={`/u/${c.owner.username}/c/${c.id}`}><span>{c.name}</span><small>@{c.owner.username} · {c.perfumeCount} perfumes</small><b>↗</b></Link>)}</div> : null}
     <section className="search-results">
       <div className="search-results-heading"><div><p className="eyebrow">MARKETPLACE</p><h2>{matchedPerfumes.length} listing{matchedPerfumes.length === 1 ? "" : "s"}</h2></div><div className="search-result-tools"><label className="search-sort">Sort<select value={sort} onChange={(event) => setSort(event.target.value as Sort)}><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="per-ml-low">Price/ml: low to high</option><option value="per-ml-high">Price/ml: high to low</option></select></label><div className="search-view-toggle"><button type="button" className={view === "list" ? "is-active" : ""} onClick={() => setView("list")}>List</button><button type="button" className={view === "cards" ? "is-active" : ""} onClick={() => setView("cards")}>Cards</button></div></div></div>
       {hasFilters ? <button type="button" className="search-clear" onClick={clear}>Clear filters</button> : null}
-      {matchedCollections.length ? <div className="search-collection-group"><p className="eyebrow">COLLECTIONS</p>{matchedCollections.slice(0, 6).map((c) => <Link key={c.id} href={`/u/${c.owner.username}/c/${c.id}`}><span>{c.name}</span><small>@{c.owner.username} · {c.perfumeCount} perfumes</small><b>↗</b></Link>)}</div> : null}
-      {!matchedPerfumes.length && !matchedCollections.length ? <p className="search-empty">Nothing matched. Try a perfume, a house, a note, or broaden your filters.</p> : null}
+      {!matchedPerfumes.length ? <p className="search-empty">No perfume listings matched. Try a perfume, a house, a note, or broaden your filters.</p> : null}
       <div className={view === "list" ? "search-listings" : "search-card-grid"}>{matchedPerfumes.map((p) => <SearchListing key={p.id} perfume={p} card={view === "cards"} />)}</div>
       {!hasFilters ? <details className="search-collectors"><summary>Browse collectors <span>({allUsers.length})</span></summary><div>{allUsers.map((u) => <Link key={u.id} href={`/u/${u.username}`}>@{u.username}<small>{u.location || "Somewhere scented"}</small></Link>)}</div></details> : null}
     </section>
