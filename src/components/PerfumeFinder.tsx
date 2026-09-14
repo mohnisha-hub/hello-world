@@ -18,7 +18,7 @@ export function PerfumeFinder({ signedIn, liveListings }: { signedIn: boolean; l
   const toggle = (note: string) => setNotes((current) => current.includes(note) ? current.filter((value) => value !== note) : [...current, note]);
   return <section className="perfume-finder explore-zone">
     <div className="explore-zone-heading"><div><p className="eyebrow">YOUR SCENT JOURNEY</p><h2>Perfume explorer</h2><p>Choose notes you gravitate toward and discover perfumes from Atelier&apos;s saved fragrance catalogue.</p></div></div>
-    <input className="perfume-finder-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a perfume or house" aria-label="Search perfume finder" />
+    <input className="perfume-finder-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a perfume or house" aria-label="Search perfume explorer" />
     <div className="perfume-note-picker" aria-label="Preferred notes">{STARTER_NOTES.map((note) => <button key={note} type="button" onClick={() => toggle(note)} className={notes.includes(note) ? "is-active" : ""}>{note}</button>)}</div>
     <div className="perfume-finder-results">{results.slice(0, visibleResults).map((entry) => <FinderResult key={fragranceCatalogKey(entry)} entry={entry} signedIn={signedIn} hasLiveListing={hasLiveListing(entry, liveListings)} />)}</div>
     {results.length > visibleResults ? <button type="button" className="perfume-finder-more" onClick={() => setVisibleResults((current) => current + 6)}>Show more perfumes <span>({results.length - visibleResults} more)</span></button> : null}
