@@ -38,7 +38,7 @@ export default async function ExplorePage() {
   const ratingMap = Object.fromEntries(ratingRows);
 
   return (
-    <div className="space-y-8">
+    <div className="explore-page">
       <div className="flex flex-wrap items-end justify-between gap-5 border-b border-line pb-7">
         <div>
           <p className="eyebrow">Atelier explore</p>
@@ -47,6 +47,11 @@ export default async function ExplorePage() {
         </div>
         <Link className="btn" href="/me/create">List something</Link>
       </div>
+      <nav className="explore-jump-nav" aria-label="Explore sections">
+        <a href="#marketplace"><span>01</span>Marketplace</a>
+        <a href="#activity"><span>02</span>Community activity</a>
+        <a href="#perfume-explorer"><span>03</span>Perfume explorer</a>
+      </nav>
       <section id="marketplace" className="explore-zone explore-marketplace">
         <div className="explore-zone-heading">
           <div>
@@ -56,9 +61,12 @@ export default async function ExplorePage() {
           </div>
         </div>
         <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={allUsers} ratingMap={ratingMap} />
-        <ActivityFeed activities={activities} compact />
       </section>
-      <PerfumeFinder signedIn={Boolean(session?.user?.id)} liveListings={perfumes.map((perfume) => ({ brand: perfume.brand, name: perfume.name }))} />
+      <section id="activity" className="explore-zone explore-priority-section explore-activity-section">
+        <div className="explore-zone-heading"><div><p className="eyebrow">THE COMMUNITY</p><h2>Activity</h2><p>See the latest shelves, favourites, wishlists, and listings from people in Atelier.</p></div></div>
+        <ActivityFeed activities={activities} mode="explore" />
+      </section>
+      <div id="perfume-explorer"><PerfumeFinder signedIn={Boolean(session?.user?.id)} liveListings={perfumes.map((perfume) => ({ brand: perfume.brand, name: perfume.name }))} /></div>
     </div>
   );
 }
