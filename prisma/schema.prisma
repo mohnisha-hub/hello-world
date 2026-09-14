@@ -5,7 +5,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("ATELIERNEW_DATABASE_URL")
+  // Build and migration tooling use the standard Prisma variable. Vercel maps
+  // the dedicated Atelier Neon connection to DATABASE_URL before this runs.
+  url      = env("DATABASE_URL")
 }
 
 model User {
