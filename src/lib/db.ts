@@ -3,13 +3,9 @@ export function configuredDatabaseUrl() {
   // runtime. Indexed lookup keeps Next's action compiler from snapshotting a
   // missing build-time value into the server-action bundle.
   const environment = process.env as Record<string, string | undefined>;
-  const url = ["ATELIER_DATABASE_URL", "DATABASE_URL", "POSTGRES_PRISMA_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING"]
-    .map((key) => environment[key])
-    .find(Boolean);
-  if (!url || url.startsWith("file:")) return null;
-  if (url.includes("127.0.0.1") || url.includes("localhost")) return null;
-  if (!url.startsWith("postgres")) return null;
-  return url;
+  const candidates = ["ATELIERNEW_DATABASE_URL", "ATELIER_DATABASE_URL", "DATABASE_URL", "POSTGRES_PRISMA_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING"]
+    .map((key) => environment[key]);
+  return candidates.find((url): url is string => typeof url === "string" && !url.startsWith("file:") && !url.includes("127.0.0.1") && !url.includes("localhost") && url.startsWith("postgres")) ?? null;
 }
 
 export function isDatabaseConfigured() {
