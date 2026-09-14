@@ -38,7 +38,7 @@ export default async function ExplorePage() {
   const ratingMap = Object.fromEntries(ratingRows);
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-5 border-b border-line pb-7">
         <div>
           <p className="eyebrow">Atelier explore</p>
@@ -47,14 +47,18 @@ export default async function ExplorePage() {
         </div>
         <Link className="btn" href="/me/create">List something</Link>
       </div>
+      <section id="marketplace" className="explore-zone explore-marketplace">
+        <div className="explore-zone-heading">
+          <div>
+            <p className="eyebrow">BUY · BID · DISCOVER</p>
+            <h2>Marketplace</h2>
+            <p>Browse live bottles, decants, and active bids from collectors. Filter by house, note, type, size, price, or location.</p>
+          </div>
+        </div>
+        <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={allUsers} ratingMap={ratingMap} />
+        <ActivityFeed activities={activities} compact />
+      </section>
       <PerfumeFinder signedIn={Boolean(session?.user?.id)} liveListings={perfumes.map((perfume) => ({ brand: perfume.brand, name: perfume.name }))} />
-      <div id="marketplace" className="border-t border-line pt-8">
-        <p className="eyebrow">MARKETPLACE</p>
-        <h2 className="mt-1 font-serif text-3xl sm:text-4xl">Live bottles and active bids.</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Browse what collectors are ready to pass on, then narrow by house, note, type, size, price, or location.</p>
-      </div>
-      <ActivityFeed activities={activities} compact />
-      <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={allUsers} ratingMap={ratingMap} />
     </div>
   );
 }

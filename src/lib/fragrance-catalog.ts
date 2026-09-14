@@ -212,7 +212,7 @@ const importedEntries = (masterCatalog as ImportedMasterCatalog).brands.flatMap(
 });
 
 // The attached top-500 imports are bundled as a local catalogue. They power
-// suggestions and the Perfume Finder, but never create marketplace listings.
+// suggestions and the Perfume Explorer, but never create marketplace listings.
 export const FRAGRANCE_CATALOG: FragranceEntry[] = Array.from(
   new Map([...CURATED_FRAGRANCE_CATALOG, ...importedEntries].map((entry) => [`${normalize(entry.brand)}--${normalize(entry.name)}`, entry])).values(),
 );
