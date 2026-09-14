@@ -1,6 +1,13 @@
 #!/bin/sh
 set -e
 
+# The dedicated Atelier Neon resource is the source of truth.  Mirror it to
+# DATABASE_URL as well so the migration guard below evaluates the same
+# connection that Prisma uses in schema.prisma.
+if [ -n "$ATELIERNEW_DATABASE_URL" ]; then
+  export DATABASE_URL="$ATELIERNEW_DATABASE_URL"
+fi
+
 if [ -z "$DATABASE_URL" ] || echo "$DATABASE_URL" | grep -q '^file:'; then
   if [ -n "$POSTGRES_PRISMA_URL" ]; then
     export DATABASE_URL="$POSTGRES_PRISMA_URL"
