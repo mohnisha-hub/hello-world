@@ -236,7 +236,7 @@ export function popularBrands() {
   return [...prioritized, ...remaining];
 }
 
-export function perfumesForBrand(brand: string, limit = 8) {
+export function perfumesForBrand(brand: string, limit = 20) {
   const target = normalize(brand);
   if (!target) return [];
   return FRAGRANCE_CATALOG
@@ -245,7 +245,7 @@ export function perfumesForBrand(brand: string, limit = 8) {
     .slice(0, limit);
 }
 
-export function searchFragranceCatalog(query: string, limit = 8) {
+export function searchFragranceCatalog(query: string, limit = 16) {
   const q = normalize(query);
   if (q.length < 2) return [];
   const scored = FRAGRANCE_CATALOG.map((entry) => {

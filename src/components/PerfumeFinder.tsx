@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
 import { addCatalogPerfumeToShelfAction } from "@/actions/listings";
 import { toggleWishlistAction } from "@/actions/wishlist";
 import { FRAGRANCE_CATALOG, fragranceCatalogKey, type FragranceEntry } from "@/lib/fragrance-catalog";
@@ -12,13 +12,16 @@ type LiveListing = { brand: string | null; name: string };
 export function PerfumeFinder({ signedIn, liveListings }: { signedIn: boolean; liveListings: LiveListing[] }) {
   const [notes, setNotes] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+  const [visibleResults, setVisibleResults] = useState(6);
   const results = useMemo(() => recommend(FRAGRANCE_CATALOG, notes, query), [notes, query]);
+  useEffect(() => setVisibleResults(6), [notes, query]);
   const toggle = (note: string) => setNotes((current) => current.includes(note) ? current.filter((value) => value !== note) : [...current, note]);
   return <section className="perfume-finder">
     <div className="perfume-finder-heading"><div><p className="eyebrow">PERFUME FINDER</p><h2 className="section-heading">Find a scent for your story.</h2><p>Choose notes you gravitate toward; recommendations come from Atelier&apos;s saved fragrance catalogue.</p></div></div>
     <input className="perfume-finder-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search a perfume or house" aria-label="Search perfume finder" />
     <div className="perfume-note-picker" aria-label="Preferred notes">{STARTER_NOTES.map((note) => <button key={note} type="button" onClick={() => toggle(note)} className={notes.includes(note) ? "is-active" : ""}>{note}</button>)}</div>
-    <div className="perfume-finder-results">{results.slice(0, 6).map((entry) => <FinderResult key={fragranceCatalogKey(entry)} entry={entry} signedIn={signedIn} hasLiveListing={hasLiveListing(entry, liveListings)} />)}</div>
+    <div className="perfume-finder-results">{results.slice(0, visibleResults).map((entry) => <FinderResult key={fragranceCatalogKey(entry)} entry={entry} signedIn={signedIn} hasLiveListing={hasLiveListing(entry, liveListings)} />)}</div>
+    {results.length > visibleResults ? <button type="button" className="perfume-finder-more" onClick={() => setVisibleResults((current) => current + 6)}>Show more perfumes <span>({results.length - visibleResults} more)</span></button> : null}
   </section>;
 }
 

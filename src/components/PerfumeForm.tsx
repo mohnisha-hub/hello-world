@@ -93,7 +93,7 @@ export function PerfumeForm({
   const brandChoices = useMemo(() => popularBrands(), []);
   const brandPerfumes = useMemo(() => perfumesForBrand(brand), [brand]);
   const matches = useMemo(
-    () => brand ? brandPerfumes.filter((entry) => entry.name.toLowerCase().includes(name.toLowerCase())).slice(0, 8) : searchFragranceCatalog(name),
+    () => brand ? brandPerfumes.filter((entry) => entry.name.toLowerCase().includes(name.toLowerCase())).slice(0, 16) : searchFragranceCatalog(name),
     [brand, brandPerfumes, name],
   );
 
