@@ -21,6 +21,15 @@ fi
 sh scripts/prisma-generate.sh
 
 if [ -n "$DATABASE_URL" ] && echo "$DATABASE_URL" | grep -q '^postgres'; then
+  # A prior production deploy partially completed this migration: the
+  # bidEndsAt column exists, but Prisma retained a failed migration record.
+  # Resolve only that known state; fresh databases never match P3009 here.
+  migration_status="$(npx prisma migrate status 2>&1 || true)"
+  if echo "$migration_status" | grep -q 'P3009' && echo "$migration_status" | grep -q '20260913165000_add_bid_deadline'; then
+    echo "Reconciling the completed bid deadline migration record."
+    npx prisma migrate resolve --applied 20260913165000_add_bid_deadline
+  fi
+
   migration_attempt=1
   until npx prisma migrate deploy; do
     if [ "$migration_attempt" -ge 3 ]; then
