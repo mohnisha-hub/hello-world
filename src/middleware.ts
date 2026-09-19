@@ -13,13 +13,13 @@ function hasSessionCookie(request: NextRequest) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  // Vercel gives every production deployment a temporary hostname. OAuth
-  // providers cannot safely whitelist an unbounded set of those addresses,
-  // so start every production session on the one stable public hostname.
-  const canonicalHost = "hello-world-mohnisha-s-team.vercel.app";
+  // Keep the complete OAuth round-trip (including Auth.js's short-lived PKCE
+  // cookie) on the public domain. Starting on a Vercel deployment hostname
+  // and returning from Google to atelierperfumes.in drops that cookie and
+  // causes Auth.js to reject the callback with InvalidCheck.
+  const canonicalHost = "www.atelierperfumes.in";
   if (
     process.env.VERCEL_ENV === "production" &&
-    request.nextUrl.hostname.endsWith(".vercel.app") &&
     request.nextUrl.hostname !== canonicalHost
   ) {
     const canonical = request.nextUrl.clone();
