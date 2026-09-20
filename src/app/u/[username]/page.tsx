@@ -11,7 +11,6 @@ import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { formatMoney } from "@/lib/money";
 import { saveScentShowcaseAction, togglePodiumAction } from "@/actions/profile";
 import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
-import { settleExpiredAuctions } from "@/lib/auctions";
 import { ScentHeartButton } from "@/components/ScentHeartButton";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { FRAGRANCE_CATALOG } from "@/lib/fragrance-catalog";
@@ -22,7 +21,6 @@ export default async function PublicProfilePage({ params, searchParams }: { para
   const listingParams = await searchParams;
   const listingView = listingParams.view === "list" ? "list" : "cards";
   const session = await auth();
-  await settleExpiredAuctions();
   const user = await prisma.user.findUnique({
     where: { username },
     include: {

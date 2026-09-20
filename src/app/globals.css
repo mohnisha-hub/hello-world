@@ -102,6 +102,7 @@ h3 {
   border-color: color-mix(in srgb, var(--live) 28%, transparent);
   background: var(--live-bg);
 }
+.wishlist-button.is-saved { border-color: color-mix(in srgb, var(--live) 60%, var(--line)); background: var(--live-bg); color: var(--live); }
 .badge-draft {
   color: var(--draft);
   border-color: color-mix(in srgb, var(--draft) 28%, transparent);
@@ -136,6 +137,7 @@ h3 {
   opacity: 0.9;
   transform: translateY(-1px);
 }
+.btn:active, .card-action:active, .section-tool:active, .notification-bell:active, .scent-heart button:active { transform: scale(.96); filter: saturate(1.25); }
 
 .btn-compact { padding: 0.45rem 0.75rem; font-size: 0.8rem; }
 

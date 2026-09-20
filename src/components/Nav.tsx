@@ -4,7 +4,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { logoutAction } from "@/actions/auth";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NavMenu } from "@/components/NavMenu";
-import { prisma } from "@/lib/prisma";
 import { MessageNavLink } from "@/components/MessageNavLink";
 
 export async function Nav() {
@@ -14,9 +13,7 @@ export async function Nav() {
   } catch {
     session = null;
   }
-  const navUser = session?.user?.id
-    ? await prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } })
-    : null;
+  const navUser = session?.user?.id && session.user.username ? { username: session.user.username } : null;
   return (
     <header className="site-header sticky top-0 z-20">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">

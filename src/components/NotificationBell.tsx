@@ -11,7 +11,11 @@ export function NotificationBell() {
   const bellRef = useRef<HTMLDivElement>(null);
   const load = async () => {
     const response = await fetch("/api/notifications", { cache: "no-store" });
-    if (response.ok) setItems((await response.json()).notifications);
+    if (response.ok) {
+      const data = await response.json() as { notifications: Notification[]; unreadMessages: number };
+      setItems(data.notifications);
+      window.dispatchEvent(new CustomEvent("atelier:notifications", { detail: { unreadMessages: data.unreadMessages } }));
+    }
   };
   useEffect(() => { load(); const timer = window.setInterval(load, 15000); return () => window.clearInterval(timer); }, []);
   useEffect(() => {

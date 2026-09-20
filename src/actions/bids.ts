@@ -8,6 +8,7 @@ import { rupeesToPaise, formatMoney } from "@/lib/money";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { notify } from "@/lib/notifications";
 import { settleExpiredAuctions } from "@/lib/auctions";
+import { withNotice } from "@/lib/notice";
 
 async function closeOtherBids(perfumeId: string, keepBidId?: string) {
   await prisma.bid.updateMany({
@@ -73,7 +74,7 @@ export async function placeBidAction(formData: FormData) {
   });
   await notify(perfume.ownerId, "bid", `New bid on ${perfume.name}: ${formatMoney(amountCents)}.`, `/p/${perfume.id}`);
   revalidateDeal((await prisma.user.findUnique({ where: { id: perfume.ownerId }, select: { username: true } }))?.username ?? "", perfumeId);
-  redirect(`/me/messages/${conversation.id}`);
+  redirect(withNotice(`/me/messages/${conversation.id}`, `Bid sent for ${perfume.name}.`));
 }
 
 export async function buyPerfumeAction(formData: FormData) {
@@ -111,7 +112,7 @@ export async function buyPerfumeAction(formData: FormData) {
   });
   await notify(perfume.ownerId, "buy", `New purchase request for ${perfume.name}. Confirm it in the deal chat when fulfilled.`, `/me/messages/${conversation.id}`);
   revalidateDeal(perfume.owner.username, perfumeId);
-  redirect(`/me/messages/${conversation.id}`);
+  redirect(withNotice(`/me/messages/${conversation.id}`, `Purchase request sent for ${perfume.name}.`));
 }
 
 export async function markDealSoldAction(formData: FormData) {

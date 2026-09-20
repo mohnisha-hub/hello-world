@@ -6,13 +6,9 @@ import Link from "next/link";
 export function MessageNavLink() {
   const [unread, setUnread] = useState(false);
   useEffect(() => {
-    const load = async () => {
-      const response = await fetch("/api/notifications", { cache: "no-store" });
-      if (response.ok) setUnread((await response.json()).unreadMessages > 0);
-    };
-    load();
-    const timer = window.setInterval(load, 15000);
-    return () => window.clearInterval(timer);
+    const receive = (event: Event) => setUnread(Boolean((event as CustomEvent<{ unreadMessages?: number }>).detail?.unreadMessages));
+    window.addEventListener("atelier:notifications", receive);
+    return () => window.removeEventListener("atelier:notifications", receive);
   }, []);
   return <Link className="nav-utility nav-utility-text" href="/me/messages" aria-label={unread ? "Messages (unread)" : "Messages"}>
     Messages

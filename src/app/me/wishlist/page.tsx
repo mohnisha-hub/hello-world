@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CollectionCard, PerfumeCard } from "@/components/Cards";
 import { fragranceByCatalogKey } from "@/lib/fragrance-catalog";
+import { Notice } from "@/components/Notice";
 
-export default async function WishlistPage() {
+export default async function WishlistPage({ searchParams }: { searchParams: Promise<{ notice?: string }> }) {
+  const { notice } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) redirect("/login?from=/me/wishlist");
   const items = await prisma.wishlistItem.findMany({
@@ -18,7 +20,7 @@ export default async function WishlistPage() {
   const [collections, perfumes] = await Promise.all([
     prisma.collection.findMany({
       where: { id: { in: collectionIds }, status: { in: ["published", "sold"] } },
-      include: { owner: true, perfumes: true },
+      include: { owner: true, perfumes: { select: { status: true } } },
     }),
     prisma.perfume.findMany({
       where: { id: { in: perfumeIds }, status: { in: ["published", "sold"] } },
@@ -28,6 +30,7 @@ export default async function WishlistPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-4xl">Wishlist</h1>
+      <Notice message={notice} />
       {items.length === 0 ? <p className="text-muted">Save collections and perfumes from other profiles.</p> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         {collections.map((c) => (

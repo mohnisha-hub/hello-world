@@ -40,10 +40,13 @@ export async function syncCollectionStatus(collectionId: string | null | undefin
 }
 
 export async function sellerRating(userId: string) {
-  const ratings = await prisma.rating.findMany({ where: { sellerId: userId } });
-  if (ratings.length === 0) return null;
-  const sum = ratings.reduce((acc, r) => acc + (r.purchaseScore + r.deliveryScore) / 2, 0);
-  return { average: sum / ratings.length, count: ratings.length };
+  const ratings = await prisma.rating.aggregate({
+    where: { sellerId: userId },
+    _avg: { purchaseScore: true, deliveryScore: true },
+    _count: { _all: true },
+  });
+  if (!ratings._count._all) return null;
+  return { average: ((ratings._avg.purchaseScore ?? 0) + (ratings._avg.deliveryScore ?? 0)) / 2, count: ratings._count._all };
 }
 
 export function sortKey(publishedAt: Date | null, createdAt: Date) {

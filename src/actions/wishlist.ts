@@ -19,4 +19,5 @@ export async function toggleWishlistAction(formData: FormData) {
   revalidatePath("/me/wishlist");
   revalidatePath(`/p/${targetId}`);
   revalidatePath("/explore");
+  return { saved: !existing };
 }

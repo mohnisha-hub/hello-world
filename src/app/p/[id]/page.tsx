@@ -9,9 +9,9 @@ import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SaleBadge } from "@/components/SaleBadge";
 import { Notice } from "@/components/Notice";
-import { settleExpiredAuctions } from "@/lib/auctions";
 import { GuestAuthCta } from "@/components/GuestAuthCta";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
+import { WishlistButton } from "@/components/WishlistButton";
 import {
   acceptBidForm,
   bidForm,
@@ -19,7 +19,6 @@ import {
   declineBidForm,
   deletePerfumeForm,
   soldForm,
-  wishlistForm,
 } from "@/actions/form-wrappers";
 
 export default async function PerfumePage({
@@ -31,7 +30,6 @@ export default async function PerfumePage({
 }) {
   const { id } = await params;
   const { notice } = await searchParams;
-  await settleExpiredAuctions();
   const session = await auth();
   const perfume = await prisma.perfume.findUnique({
     where: { id },
@@ -177,13 +175,7 @@ export default async function PerfumePage({
         ) : null}
         {session?.user && !isOwner && perfume.status === "published" && !shelfPerfume ? (
           <div className="space-y-3">
-            <form action={wishlistForm}>
-              <input type="hidden" name="targetType" value="perfume" />
-              <input type="hidden" name="targetId" value={id} />
-              <button className="btn btn-ghost" type="submit">
-                {wish ? "Remove from wishlist" : "Wishlist perfume"}
-              </button>
-            </form>
+            <WishlistButton targetType="perfume" targetId={id} saved={Boolean(wish)} label="Wishlist perfume" />
             {bidListing && !bidEnded ? (
               <form action={bidForm} className="flex flex-wrap gap-2">
                 <input type="hidden" name="perfumeId" value={id} />

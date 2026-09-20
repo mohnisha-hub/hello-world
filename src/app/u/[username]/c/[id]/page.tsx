@@ -5,9 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { isPublicListing, isPublicProfile } from "@/lib/visibility";
 import { PerfumeCard } from "@/components/Cards";
 import { collectionDisplayImage } from "@/lib/photos";
-import { wishlistForm } from "@/actions/form-wrappers";
 import { GuestAuthCta } from "@/components/GuestAuthCta";
 import { StatusBadge } from "@/components/StatusBadge";
+import { WishlistButton } from "@/components/WishlistButton";
 
 export default async function CollectionDetailPage({
   params,
@@ -56,13 +56,7 @@ export default async function CollectionDetailPage({
             {visiblePerfumes.filter((p) => p.status === "published" || p.status === "sold").length === 1 ? "" : "s"}
           </p>
           {session?.user && !isOwner ? (
-            <form action={wishlistForm} className="mt-3">
-              <input type="hidden" name="targetType" value="collection" />
-              <input type="hidden" name="targetId" value={id} />
-              <button className="btn btn-ghost" type="submit">
-                {wish ? "Remove from wishlist" : "Wishlist collection"}
-              </button>
-            </form>
+            <div className="mt-3"><WishlistButton targetType="collection" targetId={id} saved={Boolean(wish)} label="Wishlist collection" /></div>
           ) : null}
           {isOwner ? (
             <div className="mt-3 flex flex-wrap gap-2">
