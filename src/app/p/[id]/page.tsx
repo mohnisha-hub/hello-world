@@ -69,24 +69,20 @@ export default async function PerfumePage({
     status: "published",
     listingIntent: "marketplace",
     ownerId: { not: perfume.ownerId },
+    unitsAvailable: { gt: 0 },
+    owner: { profileStatus: "published" },
   } as const;
-  const sellerListings = shelfPerfume
-    ? []
-    : (await prisma.perfume.findMany({
-        where: marketplaceWhere,
-        include: { owner: { include: { ratingsReceived: true } } },
-        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-        take: 80,
-      })).filter((item) => samePerfume(item, perfume)).slice(0, 4);
+  const marketplaceCandidates = await prisma.perfume.findMany({
+    where: marketplaceWhere,
+    include: { owner: { select: { username: true, location: true, ratingsReceived: { select: { purchaseScore: true, deliveryScore: true } } } } },
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    take: 100,
+  });
+  const sellerListings = marketplaceCandidates.filter((item) => samePerfume(item, perfume)).slice(0, 4);
   const perfumeNotes = noteSet(perfume);
   const similarListings = perfumeNotes.size === 0
     ? []
-    : (await prisma.perfume.findMany({
-        where: marketplaceWhere,
-        include: { owner: { include: { ratingsReceived: true } } },
-        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-        take: 100,
-      }))
+    : marketplaceCandidates
         .map((item) => ({ item, sharedNotes: sharedNotes(perfumeNotes, noteSet(item)) }))
         .filter(({ item, sharedNotes }) => sharedNotes.length > 0 && !samePerfume(item, perfume))
         .sort((a, b) => b.sharedNotes.length - a.sharedNotes.length)
@@ -257,11 +253,11 @@ export default async function PerfumePage({
         ) : null}
       </div>
     </article>
-    {!shelfPerfume && sellerListings.length ? <section className="perfume-discovery-section">
+    {sellerListings.length ? <section className="perfume-discovery-section">
       <div className="perfume-discovery-heading"><div><p className="eyebrow">MARKETPLACE</p><h2>Perfume from sellers</h2><p>Other active listings for this scent.</p></div><Link href={`/explore?q=${encodeURIComponent([perfume.brand, perfume.name].filter(Boolean).join(" "))}#marketplace`}>View all →</Link></div>
       <div className="perfume-discovery-grid">{sellerListings.map((item) => <SellerTile key={item.id} perfume={item} />)}</div>
     </section> : null}
-    {!shelfPerfume && similarListings.length ? <section className="perfume-discovery-section">
+    {similarListings.length ? <section className="perfume-discovery-section">
       <div className="perfume-discovery-heading"><div><p className="eyebrow">DISCOVER NEARBY SCENTS</p><h2>Similar perfumes from sellers</h2><p>Available listings with notes in common.</p></div><Link href="/explore#marketplace">Browse marketplace →</Link></div>
       <div className="perfume-discovery-grid">{similarListings.map(({ item, sharedNotes }) => <SellerTile key={item.id} perfume={item} sharedNotes={sharedNotes} />)}</div>
     </section> : null}
