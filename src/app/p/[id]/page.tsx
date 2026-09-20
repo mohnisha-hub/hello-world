@@ -66,8 +66,36 @@ export default async function PerfumePage({
   const highest = openBids[0] ?? null;
   const acceptedBid = bids.find((b) => b.status === "accepted") ?? null;
   const bidEnded = Boolean(perfume.bidEndsAt && perfume.bidEndsAt <= new Date());
+  const marketplaceWhere = {
+    id: { not: perfume.id },
+    status: "published",
+    listingIntent: "marketplace",
+    ownerId: { not: perfume.ownerId },
+  } as const;
+  const sellerListings = shelfPerfume
+    ? []
+    : (await prisma.perfume.findMany({
+        where: marketplaceWhere,
+        include: { owner: { include: { ratingsReceived: true } } },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 80,
+      })).filter((item) => samePerfume(item, perfume)).slice(0, 4);
+  const perfumeNotes = noteSet(perfume);
+  const similarListings = perfumeNotes.size === 0
+    ? []
+    : (await prisma.perfume.findMany({
+        where: marketplaceWhere,
+        include: { owner: { include: { ratingsReceived: true } } },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 100,
+      }))
+        .map((item) => ({ item, sharedNotes: sharedNotes(perfumeNotes, noteSet(item)) }))
+        .filter(({ item, sharedNotes }) => sharedNotes.length > 0 && !samePerfume(item, perfume))
+        .sort((a, b) => b.sharedNotes.length - a.sharedNotes.length)
+        .slice(0, 4);
 
   return (
+    <>
     <article className="grid gap-8 md:grid-cols-2">
       <div className="listing-hero-media card">
         {perfume.imageUrl ? (
@@ -237,5 +265,32 @@ export default async function PerfumePage({
         ) : null}
       </div>
     </article>
+    {!shelfPerfume && sellerListings.length ? <section className="perfume-discovery-section">
+      <div className="perfume-discovery-heading"><div><p className="eyebrow">MARKETPLACE</p><h2>Perfume from sellers</h2><p>Other active listings for this scent.</p></div><Link href={`/explore?q=${encodeURIComponent([perfume.brand, perfume.name].filter(Boolean).join(" "))}#marketplace`}>View all →</Link></div>
+      <div className="perfume-discovery-grid">{sellerListings.map((item) => <SellerTile key={item.id} perfume={item} />)}</div>
+    </section> : null}
+    {!shelfPerfume && similarListings.length ? <section className="perfume-discovery-section">
+      <div className="perfume-discovery-heading"><div><p className="eyebrow">DISCOVER NEARBY SCENTS</p><h2>Similar perfumes from sellers</h2><p>Available listings with notes in common.</p></div><Link href="/explore#marketplace">Browse marketplace →</Link></div>
+      <div className="perfume-discovery-grid">{similarListings.map(({ item, sharedNotes }) => <SellerTile key={item.id} perfume={item} sharedNotes={sharedNotes} />)}</div>
+    </section> : null}
+    </>
   );
 }
+
+type SellerTilePerfume = Awaited<ReturnType<typeof prisma.perfume.findMany>>[number] & { owner: { username: string; location: string | null; ratingsReceived: { purchaseScore: number; deliveryScore: number }[] } };
+
+function SellerTile({ perfume, sharedNotes = [] }: { perfume: SellerTilePerfume; sharedNotes?: string[] }) {
+  const amount = listingAmountCents(perfume);
+  const ratings = perfume.owner.ratingsReceived;
+  const rating = ratings.length ? ratings.reduce((sum, row) => sum + (row.purchaseScore + row.deliveryScore) / 2, 0) / ratings.length : null;
+  return <Link href={`/p/${perfume.id}`} className="perfume-seller-tile">
+    {perfume.imageUrl ? <img src={perfume.imageUrl} alt="" /> : <span className="perfume-seller-initials">{(perfume.brand || perfume.name).slice(0, 1)}</span>}
+    <span className="perfume-seller-copy"><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{perfume.owner.username}{perfume.owner.location ? ` · ${perfume.owner.location}` : ""}</em>{sharedNotes.length ? <i>Shared: {sharedNotes.slice(0, 3).join(" · ")}</i> : null}</span>
+    <span className="perfume-seller-price">{isBidListing(perfume.saleType) ? `From ${formatMoney(amount)}` : formatMoney(amount)}<small>{rating ? `${rating.toFixed(1)} ★` : "New seller"}</small></span>
+  </Link>;
+}
+
+function normal(value: string | null | undefined) { return (value || "").trim().toLowerCase().replace(/[^a-z0-9]/g, ""); }
+function samePerfume(a: { name: string; brand: string | null }, b: { name: string; brand: string | null }) { return normal(a.name) === normal(b.name) && (!a.brand || !b.brand || normal(a.brand) === normal(b.brand)); }
+function noteSet(perfume: { topNotes: string | null; middleNotes: string | null; baseNotes: string | null }) { return new Set([perfume.topNotes, perfume.middleNotes, perfume.baseNotes].flatMap((notes) => (notes || "").split(",")).map((note) => note.trim().toLowerCase()).filter(Boolean)); }
+function sharedNotes(base: Set<string>, other: Set<string>) { return [...base].filter((note) => other.has(note)); }
