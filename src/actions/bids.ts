@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requireUser, syncCollectionStatus } from "@/lib/listings";
 import { rupeesToPaise, formatMoney } from "@/lib/money";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
@@ -228,6 +229,7 @@ export async function sendMessageAction(formData: FormData) {
   const user = await requireUser();
   const conversationId = String(formData.get("conversationId"));
   const body = String(formData.get("body") ?? "").trim();
+  const clientMessageId = String(formData.get("clientMessageId") ?? "");
   if (!body) return { error: "Write a message." };
   const convo = await prisma.conversation.findUnique({
     where: { id: conversationId },
@@ -243,8 +245,17 @@ export async function sendMessageAction(formData: FormData) {
   if (convo.bid.kind === "bid" && convo.bid.status === "declined") {
     return { error: "This bid was declined, so the deal chat is closed." };
   }
-  await prisma.message.create({ data: { conversationId, senderId: user.id, body } });
+  const hasClientMessageId = /^[a-zA-Z0-9-]{8,64}$/.test(clientMessageId);
+  try {
+    await prisma.message.create({ data: { ...(hasClientMessageId ? { id: clientMessageId } : {}), conversationId, senderId: user.id, body } });
+  } catch (error) {
+    // The client holds one UUID for the full send attempt. A retry after a
+    // slow response therefore resolves to the original message, not a copy.
+    if (hasClientMessageId && error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return { ok: true, duplicate: true };
+    throw error;
+  }
   const recipientId = convo.bid.bidderId === user.id ? convo.bid.sellerId : convo.bid.bidderId;
   await notify(recipientId, "message", "New message about a perfume deal.", `/me/messages/${conversationId}`);
   revalidatePath(`/me/messages/${conversationId}`);
+  return { ok: true };
 }

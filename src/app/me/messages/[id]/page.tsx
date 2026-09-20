@@ -2,9 +2,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { markDealSoldForm, messageForm } from "@/actions/form-wrappers";
+import { markDealSoldForm } from "@/actions/form-wrappers";
 import { Notice } from "@/components/Notice";
 import { formatMoney } from "@/lib/money";
+import { MessageComposer } from "@/components/MessageComposer";
 
 function shortTime(date: Date) {
   return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(date);
@@ -60,11 +61,7 @@ export default async function ConversationPage({
       </ul>
       {convo.bid.sellerId === session.user.id && chatEnabled && !closedDeal ? <form action={markDealSoldForm} className="chat-fulfilment"><input type="hidden" name="conversationId" value={id} /><span><strong>Fulfil this deal</strong><small>Marks one unit sold. {convo.bid.perfume.unitsAvailable} available before confirmation.</small></span><button className="btn btn-compact" type="submit">Mark one sold</button></form> : null}
       {chatEnabled ? (
-        <form action={messageForm} className="chat-composer">
-          <input type="hidden" name="conversationId" value={id} />
-          <textarea name="body" rows={1} placeholder="Write a message" aria-label="Message" required />
-          <button className="chat-send" type="submit" aria-label="Send message">↑</button>
-        </form>
+        <MessageComposer conversationId={id} />
       ) : (
         <div className="chat-pending">
           {convo.bid.status === "declined" ? "This bid was declined. The deal chat is closed." : "This deal thread is ready. The seller must accept the bid before messages can be exchanged."}
