@@ -14,6 +14,7 @@ import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 import { settleExpiredAuctions } from "@/lib/auctions";
 import { ScentHeartButton } from "@/components/ScentHeartButton";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
+import { FRAGRANCE_CATALOG } from "@/lib/fragrance-catalog";
 
 export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ username: string }>; searchParams: Promise<{ view?: string; shelfPage?: string; availablePage?: string; bidsPage?: string }> }) {
   const { username } = await params;
@@ -87,6 +88,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
   const heartCounts = Object.fromEntries(scentHearts.reduce((counts, heart) => counts.set(heart.slot, (counts.get(heart.slot) ?? 0) + 1), new Map<string, number>()));
   const heartedSlots = new Set(scentHearts.filter((heart) => heart.userId === session?.user?.id).map((heart) => heart.slot));
   const selectableShowcasePerfumes = [...shelfPerfumes].sort((a, b) => a.name.localeCompare(b.name));
+  const shelfNotes = shelfNoteProfile(shelfPerfumes);
 
   return (
     <div className="profile-page space-y-8">
@@ -208,6 +210,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
         </main>
 
         <aside className="profile-rail">
+          {shelfNotes ? <ShelfNoteProfile profile={shelfNotes} /> : null}
           <section className="scent-profile-panel">
               <div className="mb-3"><p className="eyebrow">SCENT PROFILE</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My scent profile" : `@${user.username}'s scent profile`}</h2></div>
               {!isOwner && topThree.length ? <div className="scent-podium-preview"><p>Podium</p>{topThree.map((perfume, index) => <Link key={perfume.id} href={`/p/${perfume.id}`}><span>0{index + 1}</span><strong>{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</strong><b>↗</b></Link>)}</div> : null}
@@ -228,6 +231,41 @@ export default async function PublicProfilePage({ params, searchParams }: { para
       </div>
     </div>
   );
+}
+
+function ShelfNoteProfile({ profile }: { profile: { common: { note: string; count: number }[]; suggestions: string[] } }) {
+  return <section className="shelf-note-profile">
+    <div><p className="eyebrow">YOUR SCENT DNA</p><h2>Notes on your shelf</h2><p>Your most recurring accords, based on the perfumes you&apos;ve shared.</p></div>
+    <div className="shelf-note-list">{profile.common.map(({ note, count }) => <Link key={note} href={`/explore?q=${encodeURIComponent(note)}#marketplace`}><strong>{note}</strong><span>in {count} perfumes</span></Link>)}</div>
+    {profile.suggestions.length ? <div className="shelf-note-suggestions"><p>Try something new</p><div>{profile.suggestions.map((note) => <Link key={note} href={`/explore?q=${encodeURIComponent(note)}#marketplace`}>{note} ↗</Link>)}</div></div> : null}
+  </section>;
+}
+
+function shelfNoteProfile(perfumes: { topNotes: string | null; middleNotes: string | null; baseNotes: string | null }[]) {
+  // Three shelf entries makes this an actual profile rather than a guess.
+  if (perfumes.length < 3) return null;
+  const displayByKey = new Map<string, string>();
+  const counts = new Map<string, number>();
+  for (const perfume of perfumes) {
+    for (const note of [perfume.topNotes, perfume.middleNotes, perfume.baseNotes].flatMap((value) => (value || "").split(",")).map((value) => value.trim()).filter(Boolean)) {
+      const key = note.toLowerCase();
+      displayByKey.set(key, displayByKey.get(key) || note);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  const common = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 5).map(([key, count]) => ({ note: displayByKey.get(key) || key, count }));
+  if (common.length < 2) return null;
+  const catalogCounts = new Map<string, { note: string; count: number }>();
+  for (const entry of FRAGRANCE_CATALOG) {
+    for (const note of [...entry.top, ...entry.middle, ...entry.base]) {
+      const key = note.toLowerCase();
+      if (counts.has(key)) continue;
+      const existing = catalogCounts.get(key);
+      catalogCounts.set(key, { note: existing?.note || note, count: (existing?.count ?? 0) + 1 });
+    }
+  }
+  const suggestions = [...catalogCounts.values()].sort((a, b) => b.count - a.count || a.note.localeCompare(b.note)).slice(0, 4).map((item) => item.note);
+  return { common, suggestions };
 }
 
 function NewCollectorGuide({ profilePublished }: { profilePublished: boolean }) {

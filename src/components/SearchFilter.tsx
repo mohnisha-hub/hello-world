@@ -64,7 +64,7 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
 
   return <div className="search-marketplace">
     <div className="search-bar-shell">
-      <div className="search-input-wrap"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by brand, perfume, or note" aria-label="Search by brand, perfume, or note" />{query ? <button type="button" onClick={() => setQuery("")} aria-label="Clear search">×</button> : null}</div>
+      <div className="search-input-wrap"><span aria-hidden="true">⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by brand, perfume, note, or @username" aria-label="Search by brand, perfume, note, or username" />{query ? <button type="button" onClick={() => setQuery("")} aria-label="Clear search">×</button> : null}</div>
       <div className="search-note-row"><span className="eyebrow">Popular notes</span>{POPULAR_NOTES.map((note) => <button type="button" key={note} className={query.toLowerCase() === note.toLowerCase() ? "is-active" : ""} onClick={() => setQuery(query.toLowerCase() === note.toLowerCase() ? "" : note)}>{note}</button>)}</div>
       <div className="search-filter-grid" aria-label="Marketplace filters">
         <SearchSelect label="Listing" value={listing} onChange={(value) => setListing(value as typeof listing)}><option value="all">All listings</option><option value="buy">Buy now</option><option value="bid">Accepting bids</option></SearchSelect>
