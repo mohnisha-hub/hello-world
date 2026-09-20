@@ -154,9 +154,12 @@ export async function toggleScentHeartAction(formData: FormData) {
   const showcase = parseScentShowcase(profile.scentShowcase);
   const roleSlots = new Set(SCENT_PROFILE_SLOTS.map(([key]) => key));
   const topIndex = Number(slot.slice(3));
-  if (!slot.startsWith("top") && !roleSlots.has(slot as (typeof SCENT_PROFILE_SLOTS)[number][0])) return;
+  const shelfSlot = `shelf:${perfumeId}`;
+  if (!slot.startsWith("top") && !roleSlots.has(slot as (typeof SCENT_PROFILE_SLOTS)[number][0]) && slot !== shelfSlot) return;
   if (slot.startsWith("top") && (!Number.isInteger(topIndex) || topIndex < 1 || topIndex > 3)) return;
-  const selected = slot.startsWith("top") ? showcase.top3[topIndex - 1] : showcase.slots[slot as keyof typeof showcase.slots];
+  const selected = slot === shelfSlot
+    ? (await prisma.perfume.findFirst({ where: { id: perfumeId, ownerId: profileId, status: "published", listingIntent: "collection" }, select: { id: true } }))?.id
+    : slot.startsWith("top") ? showcase.top3[topIndex - 1] : showcase.slots[slot as keyof typeof showcase.slots];
   if (selected !== perfumeId) return;
   const existing = await prisma.scentHeart.findUnique({ where: { userId_profileId_slot: { userId: user.id, profileId, slot } } });
   if (existing) await prisma.scentHeart.delete({ where: { id: existing.id } });

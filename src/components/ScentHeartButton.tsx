@@ -3,7 +3,7 @@
 import { useState, useTransition, type FormEvent } from "react";
 import { toggleScentHeartAction } from "@/actions/profile";
 
-type HeartVariant = "podium" | "role";
+type HeartVariant = "podium" | "role" | "shelf";
 
 export function ScentHeartButton({ profileId, perfumeId, slot, count, hearted, canHeart, variant }: { profileId: string; perfumeId: string; slot: string; count: number; hearted: boolean; canHeart: boolean; variant: HeartVariant }) {
   const [active, setActive] = useState(hearted);

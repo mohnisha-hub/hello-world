@@ -15,6 +15,7 @@ import { settleExpiredAuctions } from "@/lib/auctions";
 import { ScentHeartButton } from "@/components/ScentHeartButton";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { FRAGRANCE_CATALOG } from "@/lib/fragrance-catalog";
+import { atelierBadges } from "@/lib/badges";
 
 export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ username: string }>; searchParams: Promise<{ view?: string; shelfPage?: string; availablePage?: string; bidsPage?: string }> }) {
   const { username } = await params;
@@ -89,6 +90,21 @@ export default async function PublicProfilePage({ params, searchParams }: { para
   const heartedSlots = new Set(scentHearts.filter((heart) => heart.userId === session?.user?.id).map((heart) => heart.slot));
   const selectableShowcasePerfumes = [...shelfPerfumes].sort((a, b) => a.name.localeCompare(b.name));
   const shelfNotes = shelfNoteProfile(shelfPerfumes);
+  const [discoveryCount, heartsGiven] = await Promise.all([
+    prisma.bid.count({ where: { bidderId: user.id, kind: { in: ["bid", "buy"] } } }),
+    prisma.scentHeart.count({ where: { userId: user.id } }),
+  ]);
+  const showcasePicks = new Set([...scentShowcase.top3, ...Object.values(scentShowcase.slots)].filter(Boolean)).size;
+  const badges = atelierBadges({
+    shelf: shelfPerfumes.length,
+    brands: new Set(shelfPerfumes.map((perfume) => perfume.brand?.trim().toLowerCase()).filter(Boolean)).size,
+    showcasePicks,
+    wishlist: user.wishlist.length,
+    marketplace: availableListings.length + soldPerfumes.length,
+    discoveries: discoveryCount,
+    heartsGiven,
+    buyerRatings: rating?.count ?? 0,
+  });
 
   return (
     <div className="profile-page space-y-8">
@@ -120,13 +136,15 @@ export default async function PublicProfilePage({ params, searchParams }: { para
           </div>
         </div>
         <div className="profile-stats">
-          <div><p>{liveCollections.length}</p><span>Collections</span></div>
-          <div><p>{availableListings.length}</p><span>Available</span></div>
-          <div><p>{publicWishlistCollections.length + publicWishlistPerfumes.length}</p><span>Wishlist</span></div>
-          <div><p>{totalHearts}</p><span>Hearts</span></div>
+          <div><p>{shelfPerfumes.length}</p><span>On shelf</span></div>
+          <div><p>{availableListings.length}</p><span>Selling</span></div>
+          <div><p>{user.wishlist.length}</p><span>Wishlist</span></div>
+          <div><p>{rating ? `${rating.average.toFixed(1)} ★` : "—"}</p><span>{rating ? `${rating.count} buyer rating${rating.count === 1 ? "" : "s"}` : "Buyer ratings"}</span></div>
+          <div><p>{totalHearts}</p><span>Hearts received</span></div>
         </div>
         {user.bio ? <p className="border-t border-line px-5 py-4 text-sm leading-6 sm:px-7">{user.bio}</p> : null}
       </section>
+      <ProfileBadges badges={badges} username={user.username} isOwner={isOwner} />
       {isOwner && (user.profileStatus !== "published" || user.perfumes.length === 0) ? (
         <NewCollectorGuide profilePublished={user.profileStatus === "published"} />
       ) : null}
@@ -135,7 +153,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
           {topThree.length ? <TopThree perfumes={topThree} username={user.username} profileId={user.id} heartCounts={heartCounts} heartedSlots={heartedSlots} canHeart={Boolean(session?.user?.id && !isOwner)} /> : null}
 
           <ProfileSection title={isOwner ? "My shelf" : `@${user.username}'s shelf`} detail="Collection perfumes" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={shelfPaging.page} pageKey="shelfPage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
-            {shelfPerfumes.length ? <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>{shelfPaging.items.map((perfume) => <div key={perfume.id}><ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />{isOwner ? <OwnerActions targetType="perfume" targetId={perfume.id} pinned={pinIds.has(perfume.id)} editHref={`/me/perfumes/${perfume.id}/edit`} curated={scentShowcase.top3.includes(perfume.id)} canCurate={scentShowcase.top3.length < 3} /> : null}</div>)}</div><ProfilePagination username={user.username} pageKey="shelfPage" paging={shelfPaging} view={listingView} /></> : <EmptyState text={isOwner ? "Add a perfume to your shelf to share your collection." : "No shelf perfumes shared yet."} />}
+            {shelfPerfumes.length ? <><div className={listingView === "cards" ? "grid gap-3 sm:grid-cols-2" : "search-listings"}>{shelfPaging.items.map((perfume) => <div key={perfume.id} className="profile-shelf-perfume"><ProfilePerfumeDisplay perfume={perfume} view={listingView} username={user.username} showStatus={isOwner} />{!isOwner ? <ScentHeartButton profileId={user.id} perfumeId={perfume.id} slot={`shelf:${perfume.id}`} count={heartCounts[`shelf:${perfume.id}`] ?? 0} hearted={heartedSlots.has(`shelf:${perfume.id}`)} canHeart={Boolean(session?.user?.id)} variant="shelf" /> : null}{isOwner ? <OwnerActions targetType="perfume" targetId={perfume.id} pinned={pinIds.has(perfume.id)} editHref={`/me/perfumes/${perfume.id}/edit`} curated={scentShowcase.top3.includes(perfume.id)} canCurate={scentShowcase.top3.length < 3} /> : null}</div>)}</div><ProfilePagination username={user.username} pageKey="shelfPage" paging={shelfPaging} view={listingView} /></> : <EmptyState text={isOwner ? "Add a perfume to your shelf to share your collection." : "No shelf perfumes shared yet."} />}
           </ProfileSection>
 
           {availablePerfumes.length || openBidListings.length ? <section className="profile-section profile-marketplace">
@@ -231,6 +249,17 @@ export default async function PublicProfilePage({ params, searchParams }: { para
       </div>
     </div>
   );
+}
+
+function ProfileBadges({ badges, username, isOwner }: { badges: ReturnType<typeof atelierBadges>; username: string; isOwner: boolean }) {
+  const earned = badges.filter((badge) => badge.earned);
+  const next = badges.find((badge) => !badge.earned);
+  const href = (badge: (typeof badges)[number]) => badge.id === "muse" ? `/u/${username}#scent-profile` : badge.href;
+  return <section className="profile-badges" aria-labelledby="profile-badges-heading">
+    <div className="profile-badges-heading"><div><p className="eyebrow">ATELIER MARKS</p><h2 id="profile-badges-heading">{earned.length ? `${earned.length} badge${earned.length === 1 ? "" : "s"} collected` : "Your badge journey"}</h2></div>{isOwner && next ? <Link href={href(next)} className="profile-badge-next"><span>Next mark</span><strong>{next.name} · {next.progress}</strong><em>{next.description}</em></Link> : null}</div>
+    {earned.length ? <div className="profile-badge-list">{earned.map((badge) => <Link key={badge.id} className="profile-badge" href={href(badge)} title={badge.description}><span>✦</span><strong>{badge.name}</strong></Link>)}</div> : <div className="profile-badge-empty"><span>✦</span><p>{isOwner ? "Add a perfume to your shelf to collect your first mark." : "This collector is just getting started."}</p></div>}
+    {isOwner ? <details className="profile-badge-guide"><summary>See all badges you can earn</summary><div>{badges.filter((badge) => !badge.earned).map((badge) => <Link key={badge.id} href={href(badge)}><span>○</span><strong>{badge.name}</strong><small>{badge.progress} · {badge.description}</small></Link>)}</div></details> : null}
+  </section>;
 }
 
 function ShelfNoteProfile({ profile }: { profile: { common: { note: string; count: number }[]; suggestions: string[] } }) {

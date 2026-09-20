@@ -6,6 +6,7 @@ import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { fragranceLabel, searchFragranceCatalog } from "@/lib/fragrance-catalog";
 import { isAdminUsername } from "@/lib/admin";
 import { fetchFragranticaNotes, validateFragranticaPerfumeUrl } from "@/lib/fragrantica";
+import { atelierBadges } from "@/lib/badges";
 
 describe("visibility", () => {
   it("hides listings when the profile is draft", () => {
@@ -129,5 +130,17 @@ describe("admin", () => {
     expect(isAdminUsername("aarav_perfumes")).toBe(false);
     expect(isAdminUsername(undefined)).toBe(false);
     process.env.ADMIN_USERNAME = previous;
+  });
+});
+
+describe("Atelier badges", () => {
+  it("awards shelf and marketplace milestones at their intended thresholds", () => {
+    const badges = atelierBadges({ shelf: 20, brands: 10, showcasePicks: 5, wishlist: 20, marketplace: 11, discoveries: 10, heartsGiven: 1, buyerRatings: 5 });
+    expect(badges.filter((badge) => badge.earned)).toHaveLength(badges.length);
+  });
+
+  it("keeps the next milestone actionable", () => {
+    const badges = atelierBadges({ shelf: 1, brands: 1, showcasePicks: 0, wishlist: 0, marketplace: 0, discoveries: 0, heartsGiven: 0, buyerRatings: 0 });
+    expect(badges.find((badge) => !badge.earned)).toMatchObject({ name: "Curator", progress: "1/5 on shelf" });
   });
 });
