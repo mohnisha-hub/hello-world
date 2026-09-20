@@ -151,7 +151,7 @@ export function PerfumeForm({
       if (data.top?.length) setTopNotes(notesToText(data.top));
       if (data.middle?.length) setMiddleNotes(notesToText(data.middle));
       if (data.base?.length) setBaseNotes(notesToText(data.base));
-      if (isMarketplace && data.rating != null) setCatalogRating(String(data.rating));
+      if (isMarketplace && data.rating != null) setCatalogRating((Math.round(data.rating * 100) / 100).toFixed(2));
       setLinks((current) => current.some((link) => link.url === fragranticaUrl.trim()) ? current : [...current.filter((link) => link.url || link.label), { label: "Fragrantica", url: fragranticaUrl.trim() }]);
       setFragranticaStatus(data.source === "atelier-catalogue" ? "Listing details and notes filled from Atelier’s reference catalogue. You can edit them before publishing." : "Listing details and notes imported. You can edit them before publishing.");
     } catch { setFragranticaStatus("Could not import this page. Please try again."); }
@@ -399,7 +399,7 @@ export function PerfumeForm({
           type="number"
           min="0"
           max="5"
-          step="0.1"
+          step="0.01"
           value={catalogRating}
           onChange={(e) => setCatalogRating(e.target.value)}
         />

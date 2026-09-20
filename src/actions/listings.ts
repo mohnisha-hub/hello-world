@@ -150,7 +150,13 @@ export async function savePerfumeAction(formData: FormData) {
   const middleNotes = String(formData.get("middleNotes") ?? "").trim() || null;
   const baseNotes = String(formData.get("baseNotes") ?? "").trim() || null;
   const ratingRaw = String(formData.get("catalogRating") ?? "").trim();
-  const catalogRating = ratingRaw ? Number.parseFloat(ratingRaw) : null;
+  const parsedRating = ratingRaw ? Number.parseFloat(ratingRaw) : null;
+  // Fragrantica ratings commonly use two decimal places (for example 3.95).
+  // Normalize before persistence so imported and manually entered values use
+  // a consistent, database-safe precision.
+  const catalogRating = parsedRating != null && Number.isFinite(parsedRating)
+    ? Math.round(parsedRating * 100) / 100
+    : null;
   const linkLabels = formData.getAll("linkLabel").map(String);
   const linkUrls = formData.getAll("linkUrl").map(String);
   const links = linkUrls
