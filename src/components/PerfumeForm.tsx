@@ -144,13 +144,16 @@ export function PerfumeForm({
     setImportingFragrantica(true);
     try {
       const response = await fetch("/api/fragrantica-notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: fragranticaUrl }) });
-      const data = await response.json() as { top?: string[]; middle?: string[]; base?: string[]; error?: string };
+      const data = await response.json() as { brand?: string; name?: string; top?: string[]; middle?: string[]; base?: string[]; rating?: number; source?: "fragrantica" | "atelier-catalogue"; error?: string };
       if (!response.ok || data.error) { setFragranticaStatus(data.error || "Could not import this page."); return; }
+      if (data.brand) setBrand(data.brand);
+      if (data.name) setName(data.name);
       if (data.top?.length) setTopNotes(notesToText(data.top));
       if (data.middle?.length) setMiddleNotes(notesToText(data.middle));
       if (data.base?.length) setBaseNotes(notesToText(data.base));
+      if (isMarketplace && data.rating != null) setCatalogRating(String(data.rating));
       setLinks((current) => current.some((link) => link.url === fragranticaUrl.trim()) ? current : [...current.filter((link) => link.url || link.label), { label: "Fragrantica", url: fragranticaUrl.trim() }]);
-      setFragranticaStatus("Notes imported. You can edit them before publishing.");
+      setFragranticaStatus(data.source === "atelier-catalogue" ? "Listing details and notes filled from Atelier’s reference catalogue. You can edit them before publishing." : "Listing details and notes imported. You can edit them before publishing.");
     } catch { setFragranticaStatus("Could not import this page. Please try again."); }
     finally { setImportingFragrantica(false); }
   }
@@ -212,8 +215,8 @@ export function PerfumeForm({
       {error ? <p className="text-accent">{error}</p> : null}
       <input type="hidden" name="listingIntent" value={listingIntent} />
       <section className="fragrantica-import">
-        <div><p className="eyebrow">CREATE USING FRAGRANTICA LINK</p><p>Paste a Fragrantica perfume page to fill the top, middle, and base notes. Only secure Fragrantica perfume links are accepted.</p></div>
-        <div className="fragrantica-import-controls"><input type="url" inputMode="url" placeholder="https://www.fragrantica.com/perfume/..." value={fragranticaUrl} onChange={(event) => setFragranticaUrl(event.target.value)} aria-label="Fragrantica perfume page link" /><button className="btn btn-ghost" type="button" onClick={importFragrantica} disabled={importingFragrantica}>{importingFragrantica ? "Importing…" : "Import notes"}</button></div>
+        <div><p className="eyebrow">CREATE USING FRAGRANTICA LINK</p><p>Paste a Fragrantica perfume page to fill brand, perfume name, and the note pyramid. Only secure Fragrantica perfume links are accepted.</p></div>
+        <div className="fragrantica-import-controls"><input type="url" inputMode="url" placeholder="https://www.fragrantica.com/perfume/..." value={fragranticaUrl} onChange={(event) => setFragranticaUrl(event.target.value)} aria-label="Fragrantica perfume page link" /><button className="btn btn-ghost" type="button" onClick={importFragrantica} disabled={importingFragrantica}>{importingFragrantica ? "Creating…" : "Create from link"}</button></div>
         {fragranticaStatus ? <p className="text-xs text-muted" aria-live="polite">{fragranticaStatus}</p> : null}
       </section>
       <div className="space-y-3 rounded-2xl border border-line bg-paper p-4">
