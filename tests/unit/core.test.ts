@@ -111,6 +111,14 @@ describe("Fragrantica imports", () => {
       vi.stubGlobal("fetch", originalFetch);
     }
   });
+
+  it("fills Accento from the expanded reference catalogue", async () => {
+    const result = await fetchFragranticaNotes("https://www.fragrantica.com/perfume/Xerjoff/Accento-55156.html");
+    expect(result).toMatchObject({ brand: "Xerjoff", name: "Accento", source: "atelier-catalogue" });
+    expect(result.top).toEqual(["Pineapple", "Hyacinth"]);
+    expect(result.middle).toContain("Iris");
+    expect(result.base).toContain("Patchouli");
+  });
 });
 
 describe("admin", () => {

@@ -44,6 +44,7 @@ const CURATED_FRAGRANCE_CATALOG: FragranceEntry[] = [
   row("By Kilian", "Good Girl Gone Bad", "Osmanthus, Narcissus", "Rose, Orange blossom", "Musk, Woody notes", 4.1, IMG.floral),
   row("Xerjoff", "XJ 1861 Naxos", "Bergamot, Lemon, Lavender", "Honey, Cinnamon, Jasmine", "Tobacco, Tonka bean, Vanilla", 4.5, IMG.mist),
   row("Xerjoff", "Erba Pura", "Sicilian orange, Lemon, Bergamot", "Fruity notes, White flowers", "White musk, Amber, Vanilla", 4.3, IMG.floral),
+  row("Xerjoff", "Accento", "Pineapple, Hyacinth", "Iris, Pink pepper, Jasmine", "Musk, Amber, Vetiver, Vanilla, Patchouli", 4.0, IMG.floral),
   row("Xerjoff", "Alexandria II", "Lavender, Cinnamon, Rose", "Oud, Sandalwood, Cedar", "Amber, Musk, Vanilla", 4.4, IMG.wood),
   row("Tom Ford", "Tobacco Vanille", "Tobacco leaf, Spicy notes", "Tonka bean, Tobacco blossom, Vanilla, Cacao", "Dried fruits, Woody notes", 4.4, IMG.dark),
   row("Tom Ford", "Oud Wood", "Rosewood, Cardamom, Oud", "Sandalwood, Vetiver, Tonka bean", "Amber, Vanilla", 4.3, IMG.wood),

@@ -9,7 +9,7 @@ export type FragranticaImport = {
   middle: string[];
   base: string[];
   rating?: number;
-  source: "fragrantica" | "atelier-catalogue";
+  source: "fragrantica" | "atelier-catalogue" | "atelier-listing";
 };
 
 export function validateFragranticaPerfumeUrl(value: string): URL | null {
