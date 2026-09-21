@@ -77,9 +77,6 @@ export function PerfumeForm({
   const [catalogRating, setCatalogRating] = useState(
     perfume?.catalogRating != null ? String(perfume.catalogRating) : "",
   );
-  const [fragranticaUrl, setFragranticaUrl] = useState("");
-  const [fragranticaStatus, setFragranticaStatus] = useState<string | null>(null);
-  const [importingFragrantica, setImportingFragrantica] = useState(false);
   const [openSuggest, setOpenSuggest] = useState(false);
   const [coverSource, setCoverSource] = useState<"atelier" | "upload">(
     perfume?.imageUrl && !perfume.imageUrl.startsWith("/atelier/") ? "upload" : "atelier",
@@ -138,26 +135,6 @@ export function PerfumeForm({
     setOpenSuggest(false);
   }
 
-  async function importFragrantica() {
-    setFragranticaStatus(null);
-    if (!fragranticaUrl.trim()) { setFragranticaStatus("Paste a Fragrantica perfume page link first."); return; }
-    setImportingFragrantica(true);
-    try {
-      const response = await fetch("/api/fragrantica-notes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: fragranticaUrl }) });
-      const data = await response.json() as { brand?: string; name?: string; top?: string[]; middle?: string[]; base?: string[]; rating?: number; source?: "fragrantica" | "atelier-catalogue"; error?: string };
-      if (!response.ok || data.error) { setFragranticaStatus(data.error || "Could not import this page."); return; }
-      if (data.brand) setBrand(data.brand);
-      if (data.name) setName(data.name);
-      if (data.top?.length) setTopNotes(notesToText(data.top));
-      if (data.middle?.length) setMiddleNotes(notesToText(data.middle));
-      if (data.base?.length) setBaseNotes(notesToText(data.base));
-      if (isMarketplace && data.rating != null) setCatalogRating((Math.round(data.rating * 100) / 100).toFixed(2));
-      setLinks((current) => current.some((link) => link.url === fragranticaUrl.trim()) ? current : [...current.filter((link) => link.url || link.label), { label: "Fragrantica", url: fragranticaUrl.trim() }]);
-      setFragranticaStatus(data.source === "atelier-catalogue" ? "Listing details and notes filled from Atelier’s reference catalogue. You can edit them before publishing." : "Listing details and notes imported. You can edit them before publishing.");
-    } catch { setFragranticaStatus("Could not import this page. Please try again."); }
-    finally { setImportingFragrantica(false); }
-  }
-
   async function run(intent: string, fd: FormData) {
     if (!listingIntent) {
       setError("Choose how you want to add this perfume first.");
@@ -214,11 +191,6 @@ export function PerfumeForm({
       </div>
       {error ? <p className="text-accent">{error}</p> : null}
       <input type="hidden" name="listingIntent" value={listingIntent} />
-      <section className="fragrantica-import">
-        <div><p className="eyebrow">CREATE USING FRAGRANTICA LINK</p><p>Paste a Fragrantica perfume page to fill brand, perfume name, and the note pyramid. Only secure Fragrantica perfume links are accepted.</p></div>
-        <div className="fragrantica-import-controls"><input type="url" inputMode="url" placeholder="https://www.fragrantica.com/perfume/..." value={fragranticaUrl} onChange={(event) => setFragranticaUrl(event.target.value)} aria-label="Fragrantica perfume page link" /><button className="btn btn-ghost" type="button" onClick={importFragrantica} disabled={importingFragrantica}>{importingFragrantica ? "Creating…" : "Create from link"}</button></div>
-        {fragranticaStatus ? <p className="text-xs text-muted" aria-live="polite">{fragranticaStatus}</p> : null}
-      </section>
       <div className="space-y-3 rounded-2xl border border-line bg-paper p-4">
         <label className="field">
           Brand
@@ -297,8 +269,8 @@ export function PerfumeForm({
           <input name="minBid" type="number" min="1" step="0.01" required value={minBid} onChange={(e) => setMinBid(e.target.value)} />
         </label><label className="field">
           {perfume?.bidEndsAt ? "Bid duration for a new round" : "Bid duration"}
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"><input name="bidDuration" type="number" min="1" max="30" required value={bidDuration} onChange={(e) => setBidDuration(e.target.value)} /><select name="bidDurationUnit" value={bidDurationUnit} onChange={(e) => setBidDurationUnit(e.target.value as "hours" | "days")}><option value="hours">hours</option><option value="days">days</option></select></div>
-        </label>{perfume?.bidEndsAt ? <p className="sm:col-span-2 text-xs text-muted">Current round ends {new Date(perfume.bidEndsAt).toLocaleString()}. An active round keeps its existing deadline.</p> : <p className="sm:col-span-2 text-xs text-muted">At the deadline, the highest valid bid wins and Atelier opens the deal chat for both of you.</p>}</div>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"><input name="bidDuration" type="number" min="1" max={bidDurationUnit === "hours" ? 48 : 2} required value={bidDuration} onChange={(e) => setBidDuration(e.target.value)} /><select name="bidDurationUnit" value={bidDurationUnit} onChange={(e) => setBidDurationUnit(e.target.value as "hours" | "days")}><option value="hours">hours</option><option value="days">days</option></select></div>
+        </label>{perfume?.bidEndsAt ? <p className="sm:col-span-2 text-xs text-muted">Current round ends {new Date(perfume.bidEndsAt).toLocaleString()}. An active round keeps its existing deadline.</p> : <p className="sm:col-span-2 text-xs text-muted">Choose from 1 hour to 48 hours. At the deadline, the highest valid bid wins and Atelier opens the deal chat for both of you.</p>}</div>
       ) : isMarketplace ? (
         <label className="field">
           Price (INR)

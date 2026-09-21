@@ -1,11 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { isCommunityVisiblePerfume, isPublicProfile } from "@/lib/visibility";
 import { dollarsToCents, formatMoney } from "@/lib/money";
 import { perfumeCompletion } from "@/lib/completion";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { fragranceLabel, searchFragranceCatalog } from "@/lib/fragrance-catalog";
 import { isAdminUsername } from "@/lib/admin";
-import { fetchFragranticaNotes, validateFragranticaPerfumeUrl } from "@/lib/fragrantica";
 import { atelierBadges } from "@/lib/badges";
 
 describe("visibility", () => {
@@ -83,42 +82,6 @@ describe("fragrance catalog", () => {
 
   it("returns nothing for a one-letter query", () => {
     expect(searchFragranceCatalog("b")).toEqual([]);
-  });
-});
-
-describe("Fragrantica imports", () => {
-  it("only permits secure Fragrantica perfume URLs", () => {
-    expect(validateFragranticaPerfumeUrl("https://www.fragrantica.com/perfume/Giorgio-Armani/Si-18453.html")?.hostname).toBe("www.fragrantica.com");
-    expect(validateFragranticaPerfumeUrl("http://www.fragrantica.com/perfume/Giorgio-Armani/Si-18453.html")).toBeNull();
-    expect(validateFragranticaPerfumeUrl("https://www.fragrantica.com/login")).toBeNull();
-    expect(validateFragranticaPerfumeUrl("https://fragrantica.com.evil.example/perfume/Giorgio-Armani/Si-18453.html")).toBeNull();
-  });
-
-  it("fills Sì from the local catalogue immediately", async () => {
-    const originalFetch = globalThis.fetch;
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("blocked", { status: 403, headers: { "content-type": "text/html" } })));
-    try {
-      const result = await fetchFragranticaNotes("https://www.fragrantica.com/perfume/Giorgio-Armani/Si-18453.html");
-      expect(result).toMatchObject({
-        brand: "Giorgio Armani",
-        name: "Sì Eau de Parfum",
-        source: "atelier-catalogue",
-      });
-      expect(result.top).toContain("Cassis (Blackcurrant)");
-      expect(result.middle).toContain("May Rose");
-      expect(result.base).toContain("Vanilla");
-      expect(globalThis.fetch).not.toHaveBeenCalled();
-    } finally {
-      vi.stubGlobal("fetch", originalFetch);
-    }
-  });
-
-  it("fills Accento from the expanded reference catalogue", async () => {
-    const result = await fetchFragranticaNotes("https://www.fragrantica.com/perfume/Xerjoff/Accento-55156.html");
-    expect(result).toMatchObject({ brand: "Xerjoff", name: "Accento", source: "atelier-catalogue" });
-    expect(result.top).toEqual(["Pineapple", "Hyacinth"]);
-    expect(result.middle).toContain("Iris");
-    expect(result.base).toContain("Patchouli");
   });
 });
 
