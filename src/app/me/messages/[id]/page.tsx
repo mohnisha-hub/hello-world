@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { markDealSoldForm } from "@/actions/form-wrappers";
+import { markDealSoldForm, rateForm } from "@/actions/form-wrappers";
 import { Notice } from "@/components/Notice";
 import { formatMoney } from "@/lib/money";
 import { MessageComposer } from "@/components/MessageComposer";
@@ -36,6 +36,9 @@ export default async function ConversationPage({
   const chatEnabled = convo.bid.kind === "buy" || ["accepted", "archived"].includes(convo.bid.status);
   const counterpart = convo.bid.bidderId === session.user.id ? convo.bid.seller : convo.bid.bidder;
   const closedDeal = convo.bid.status === "archived";
+  const rating = closedDeal && convo.bid.bidderId === session.user.id
+    ? await prisma.rating.findUnique({ where: { perfumeId_raterId: { perfumeId: convo.bid.perfumeId, raterId: session.user.id } } })
+    : null;
   return (
     <div className="chat-page">
       <header className="chat-header">
@@ -60,6 +63,15 @@ export default async function ConversationPage({
         ))}
       </ul>
       {convo.bid.sellerId === session.user.id && chatEnabled && !closedDeal ? <form action={markDealSoldForm} className="chat-fulfilment"><input type="hidden" name="conversationId" value={id} /><span><strong>Fulfil this deal</strong><small>Marks one unit sold. {convo.bid.perfume.unitsAvailable} available before confirmation.</small></span><button className="btn btn-compact" type="submit">Mark one sold</button></form> : null}
+      {closedDeal && convo.bid.bidderId === session.user.id && !rating ? (
+        <form action={rateForm} className="chat-fulfilment">
+          <input type="hidden" name="perfumeId" value={convo.bid.perfumeId} />
+          <span><strong>How did this deal go?</strong><small>Now that the seller marked it sold, leave a rating to help the community.</small></span>
+          <label className="field text-sm">Purchase<input name="purchaseScore" type="number" min={1} max={10} required /></label>
+          <label className="field text-sm">Delivery<input name="deliveryScore" type="number" min={1} max={10} required /></label>
+          <button className="btn btn-compact" type="submit">Rate seller</button>
+        </form>
+      ) : null}
       {chatEnabled ? (
         <MessageComposer conversationId={id} />
       ) : (

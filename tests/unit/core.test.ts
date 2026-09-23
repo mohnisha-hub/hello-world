@@ -4,7 +4,6 @@ import { dollarsToCents, formatMoney } from "@/lib/money";
 import { perfumeCompletion } from "@/lib/completion";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { fragranceLabel, searchFragranceCatalog } from "@/lib/fragrance-catalog";
-import { isAdminUsername } from "@/lib/admin";
 import { atelierBadges } from "@/lib/badges";
 
 describe("visibility", () => {
@@ -85,16 +84,6 @@ describe("fragrance catalog", () => {
   });
 });
 
-describe("admin", () => {
-  it("only matches ADMIN_USERNAME exactly", () => {
-    const previous = process.env.ADMIN_USERNAME;
-    process.env.ADMIN_USERNAME = "mohnisha";
-    expect(isAdminUsername("mohnisha")).toBe(true);
-    expect(isAdminUsername("aarav_perfumes")).toBe(false);
-    expect(isAdminUsername(undefined)).toBe(false);
-    process.env.ADMIN_USERNAME = previous;
-  });
-});
 
 describe("Atelier badges", () => {
   it("awards shelf and marketplace milestones at their intended thresholds", () => {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { savePerfumeAction } from "@/actions/listings";
-import { perfumeCompletion, parseLinks } from "@/lib/completion";
+import { perfumeCompletion } from "@/lib/completion";
 import { suggestedPerfumeArt } from "@/lib/photos";
 import { isBidListing } from "@/lib/sale";
 import { notesToText, perfumesForBrand, popularBrands, searchFragranceCatalog, type FragranceEntry } from "@/lib/fragrance-catalog";
@@ -32,7 +32,6 @@ type Perfume = {
   middleNotes?: string | null;
   baseNotes?: string | null;
   catalogRating?: number | null;
-  links: string;
   status: string;
   collectionId: string | null;
 };
@@ -82,10 +81,6 @@ export function PerfumeForm({
     perfume?.imageUrl && !perfume.imageUrl.startsWith("/atelier/") ? "upload" : "atelier",
   );
   const [hasUpload, setHasUpload] = useState(false);
-  const initialLinks = parseLinks(perfume?.links);
-  const [links, setLinks] = useState(
-    initialLinks.length ? initialLinks : [{ label: "", url: "" }],
-  );
 
   const suggested = suggestedPerfumeArt(name || "perfume");
   const isMarketplace = listingIntent === "marketplace";
@@ -109,9 +104,8 @@ export function PerfumeForm({
         topNotes,
         middleNotes,
         baseNotes,
-        links,
       }),
-    [previewImage, perfume?.imageUrl, coverSource, hasUpload, kind, fill, ml, shippingIncluded, description, topNotes, middleNotes, baseNotes, links],
+    [previewImage, perfume?.imageUrl, coverSource, hasUpload, kind, fill, ml, shippingIncluded, description, topNotes, middleNotes, baseNotes],
   );
 
   useEffect(() => {
@@ -398,34 +392,6 @@ export function PerfumeForm({
         Sourced from <span className="text-xs text-muted">(optional)</span>
         <input name="sourcedFrom" placeholder="A gift, a boutique, a swap…" value={sourcedFrom} onChange={(e) => setSourcedFrom(e.target.value)} />
       </label>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-3"><p className="text-sm">External links <span className="text-xs text-muted">(optional)</span></p><button className="text-sm text-accent underline underline-offset-4" type="button" onClick={() => setLinks([...links, { label: "", url: "" }])}>Add link</button></div>
-        {links.map((link, i) => (
-          <div key={i} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-            <input
-              name="linkLabel"
-              placeholder="Label"
-              value={link.label}
-              onChange={(e) => {
-                const next = [...links];
-                next[i] = { ...next[i], label: e.target.value };
-                setLinks(next);
-              }}
-            />
-            <input
-              name="linkUrl"
-              placeholder="https://"
-              value={link.url}
-              onChange={(e) => {
-                const next = [...links];
-                next[i] = { ...next[i], url: e.target.value };
-                setLinks(next);
-              }}
-            />
-            <button type="button" className="btn-ghost px-3 text-sm" aria-label={`Remove link ${i + 1}`} onClick={() => setLinks(links.filter((_, index) => index !== i))}>Remove</button>
-          </div>
-        ))}
-      </div>
       <div className="flex flex-wrap gap-3">
         <button className="btn btn-ghost" formAction={(fd) => run("save", fd)} type="submit">
           Save draft

@@ -12,6 +12,14 @@ test("visitor search finds live listings and hides draft profiles", async ({ pag
   expect(draft.status()).toBe(404);
 });
 
+test("public pages send baseline browser security headers", async ({ request }) => {
+  const response = await request.get("/");
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response.headers()["x-frame-options"]).toBe("DENY");
+  expect(response.headers()["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+});
+
 test("signup, rejected wrong password, then login redirect", async ({ page }) => {
   const username = `t${Date.now().toString(36).slice(-8)}`;
   await page.goto("/signup?from=/me/wishlist");
@@ -39,14 +47,24 @@ test("non-admin never sees the impersonation switcher", async ({ page }) => {
   await expect(page.getByText("Admin editing as")).toHaveCount(0);
 });
 
-test("admin can switch acting user", async ({ page }) => {
+test("no collector can impersonate another collector", async ({ page }) => {
   await page.goto("/login?from=/me/profile");
-  await page.getByLabel("Username").fill(process.env.ADMIN_USERNAME || "mohnisha");
+  await page.getByLabel("Username").fill("mohnisha");
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByText("Admin editing as")).toBeVisible();
-  await page.getByRole("combobox").selectOption({ label: "@priya_scents" });
-  await expect(page.getByText("Username: @priya_scents", { exact: false })).toBeVisible();
+  await expect(page.getByText("Admin editing as")).toHaveCount(0);
+  await expect(page.getByRole("combobox")).toHaveCount(0);
+});
+
+test("listing creation does not expose an external-link field", async ({ page }) => {
+  await page.goto("/login?from=/me/perfumes/new");
+  await page.getByLabel("Username").fill("aarav_perfumes");
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page).toHaveURL(/\/me\/perfumes\/new/);
+  await page.getByRole("button", { name: /Add to my shelf/i }).click();
+  await expect(page.getByText("External links", { exact: false })).toHaveCount(0);
+  await expect(page.getByPlaceholder("https://")).toHaveCount(0);
 });
 
 test("logged-out listing shows login CTA and public profile hides email", async ({ page }) => {

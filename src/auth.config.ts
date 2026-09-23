@@ -1,9 +1,15 @@
 import type { NextAuthConfig } from "next-auth";
 
 function authSecret() {
-  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
-  console.warn("AUTH_SECRET is not set. Using a fallback so the site can boot; set AUTH_SECRET on Vercel.");
-  return "atelier-fallback-auth-secret-set-AUTH_SECRET-on-vercel";
+  const secret = process.env.AUTH_SECRET?.trim();
+  if (secret && secret.length >= 32) return secret;
+
+  // A predictable signing key turns a configuration mistake into forged
+  // sessions. Deployed environments must fail closed instead.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET must be set to a random value of at least 32 characters.");
+  }
+  return "development-only-auth-secret-do-not-use-in-production";
 }
 
 export const authConfig = {

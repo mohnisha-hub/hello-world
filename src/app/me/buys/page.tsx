@@ -56,7 +56,7 @@ export default async function BuysPage({
             </p>
             <div className="flex flex-wrap gap-2">
               {b.conversation ? <Link href={`/me/messages/${b.conversation.id}`}>Open chat</Link> : null}
-              {b.bidderId === session.user.id && !rated.has(b.perfumeId) ? (
+              {b.bidderId === session.user.id && b.status === "archived" && !rated.has(b.perfumeId) ? (
                 <form action={rateForm} className="flex flex-wrap items-end gap-2">
                   <input type="hidden" name="perfumeId" value={b.perfumeId} />
                   <label className="field">

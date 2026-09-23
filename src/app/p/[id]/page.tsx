@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isCommunityVisiblePerfume } from "@/lib/visibility";
 import { formatMoney, formatPricePerMl } from "@/lib/money";
-import { parseLinks, perfumeCompletion } from "@/lib/completion";
+import { perfumeCompletion } from "@/lib/completion";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SaleBadge } from "@/components/SaleBadge";
@@ -40,7 +40,6 @@ export default async function PerfumePage({
   if (!isOwner) {
     if (!isCommunityVisiblePerfume(perfume)) notFound();
   }
-  const links = parseLinks(perfume.links);
   const completion = perfumeCompletion(perfume);
   const amount = listingAmountCents(perfume);
   const bidListing = isBidListing(perfume.saleType);
@@ -154,17 +153,6 @@ export default async function PerfumePage({
           ) : null}
         </ul>
         {perfume.description ? <p>{perfume.description}</p> : null}
-        {links.length > 0 ? (
-          <ul className="text-sm">
-            {links.map((l) => (
-              <li key={l.url}>
-                <a href={l.url} target="_blank" rel="noreferrer">
-                  {l.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : null}
         {isOwner ? <p className="text-sm text-muted">Completion {completion.percent}%</p> : null}
         {!shelfPerfume && !session?.user && perfume.status === "published" && !isOwner ? (
           <GuestAuthCta from={`/p/${id}`} action={bidListing ? "wishlist or bid" : "wishlist or buy"} />

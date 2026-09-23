@@ -16,8 +16,9 @@ export function WishlistButton({ targetId, targetType, saved, label }: { targetI
       data.set("targetType", targetType);
       data.set("targetId", targetId);
       const result = await toggleWishlistAction(data);
-      setActive(!wasSaved);
-      if (!wasSaved) window.setTimeout(() => router.push("/me/wishlist?notice=Added%20to%20your%20wishlist."), 500);
+      if (!result) return;
+      setActive(result.saved);
+      if (result.saved && !wasSaved) window.setTimeout(() => router.push("/me/wishlist?notice=Added%20to%20your%20wishlist."), 500);
     });
   }
 

@@ -1,9 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { getActingUser, listEditableUsers } from "@/lib/acting";
-import { isAdminUsername } from "@/lib/admin";
-import { ActingUserSwitcher } from "@/components/ActingUserSwitcher";
 
 export default async function MeLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -14,19 +11,5 @@ export default async function MeLayout({ children }: { children: React.ReactNode
   });
   if (!user) redirect("/login?from=/me");
   if (!user.usernameConfigured) redirect("/onboarding?from=/me");
-  const acting = await getActingUser();
-  const isAdmin = isAdminUsername(session.user.username || user.username);
-  const users = isAdmin ? await listEditableUsers() : [];
-  return (
-    <div>
-      {isAdmin ? (
-        <ActingUserSwitcher
-          users={users}
-          currentId={acting?.id ?? user.id}
-          loggedInAs={session.user.username || user.username}
-        />
-      ) : null}
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }

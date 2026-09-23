@@ -10,6 +10,12 @@ import { rupeesToPaise } from "@/lib/money";
 import { isBidListing } from "@/lib/sale";
 import { fragranceByCatalogKey, notesToText } from "@/lib/fragrance-catalog";
 import { withNotice } from "@/lib/notice";
+import { takeUserLimit } from "@/lib/rate-limit";
+
+function readText(formData: FormData, key: string, maxLength: number) {
+  const value = String(formData.get(key) ?? "").trim();
+  return value.length <= maxLength ? value || null : undefined;
+}
 
 function revalidateOwner(username: string, extra?: string[]) {
   revalidatePath("/me");
@@ -50,13 +56,14 @@ async function moveToUncategorizedCollection(ownerId: string, sourceCollectionId
 
 export async function saveCollectionAction(formData: FormData) {
   const user = await requireUser();
+  if (!(await takeUserLimit("collection-save", user.id, 30, 60 * 60_000))) return { error: "You have made many changes recently. Please try again in an hour." };
   const id = String(formData.get("id") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "A collection needs a name." };
+  const name = readText(formData, "name", 100);
+  if (!name) return { error: name === undefined ? "Collection names can be up to 100 characters." : "A collection needs a name." };
   const intent = String(formData.get("intent") ?? "save");
   const useAtelierArt = formData.get("coverSource") !== "upload";
   const file = formData.get("photo") as File | null;
-  const upload = await trySaveUpload(file, `col-${user.id}`);
+  const upload = await trySaveUpload(file, `col-${user.id}`, user.id);
   if (upload.error) return { error: upload.error };
   const uploaded = upload.url;
 
@@ -103,15 +110,17 @@ export async function saveCollectionAction(formData: FormData) {
 
 export async function savePerfumeAction(formData: FormData) {
   const user = await requireUser();
+  if (!(await takeUserLimit("listing-save", user.id, 60, 60 * 60_000))) return { error: "You have made many listing changes recently. Please try again in an hour." };
   const id = String(formData.get("id") ?? "");
-  const brand = String(formData.get("brand") ?? "").trim() || null;
-  const name = String(formData.get("name") ?? "").trim();
+  const brand = readText(formData, "brand", 100);
+  const name = readText(formData, "name", 160);
   const listingIntent = String(formData.get("listingIntent") ?? "marketplace") === "collection" ? "collection" : "marketplace";
   const acceptBids = formData.get("acceptBids") === "on" || formData.get("acceptBids") === "true";
   const saleType = listingIntent === "collection" ? "collection" : acceptBids ? "bid" : "buy";
   const priceCents = rupeesToPaise(String(formData.get("price") ?? ""));
   const minBidCents = rupeesToPaise(String(formData.get("minBid") ?? ""));
-  if (!name) return { error: "Name is required." };
+  if (!name) return { error: name === undefined ? "Perfume names can be up to 160 characters." : "Name is required." };
+  if (brand === undefined) return { error: "Brand names can be up to 100 characters." };
   if (listingIntent === "marketplace" && saleType === "buy" && priceCents == null) return { error: "Enter a buy price in INR." };
   if (listingIntent === "marketplace" && saleType === "bid" && (minBidCents == null || minBidCents <= 0)) {
     return { error: "Enter a minimum bid in INR." };
@@ -144,11 +153,12 @@ export async function savePerfumeAction(formData: FormData) {
   const unitsAvailable = Number(String(formData.get("unitsAvailable") ?? "1"));
   if (listingIntent === "marketplace" && (!Number.isInteger(unitsAvailable) || unitsAvailable < 1)) return { error: "Enter at least one available unit." };
   const shippingIncluded = formData.getAll("shippingIncluded").map(String).includes("true");
-  const description = String(formData.get("description") ?? "").trim() || null;
-  const sourcedFrom = String(formData.get("sourcedFrom") ?? "").trim() || null;
-  const topNotes = String(formData.get("topNotes") ?? "").trim() || null;
-  const middleNotes = String(formData.get("middleNotes") ?? "").trim() || null;
-  const baseNotes = String(formData.get("baseNotes") ?? "").trim() || null;
+  const description = readText(formData, "description", 4_000);
+  const sourcedFrom = readText(formData, "sourcedFrom", 240);
+  const topNotes = readText(formData, "topNotes", 1_000);
+  const middleNotes = readText(formData, "middleNotes", 1_000);
+  const baseNotes = readText(formData, "baseNotes", 1_000);
+  if ([description, sourcedFrom, topNotes, middleNotes, baseNotes].includes(undefined)) return { error: "One or more listing fields are too long." };
   const ratingRaw = String(formData.get("catalogRating") ?? "").trim();
   const parsedRating = ratingRaw ? Number.parseFloat(ratingRaw) : null;
   // Fragrantica ratings commonly use two decimal places (for example 3.95).
@@ -157,14 +167,9 @@ export async function savePerfumeAction(formData: FormData) {
   const catalogRating = parsedRating != null && Number.isFinite(parsedRating)
     ? Math.round(parsedRating * 100) / 100
     : null;
-  const linkLabels = formData.getAll("linkLabel").map(String);
-  const linkUrls = formData.getAll("linkUrl").map(String);
-  const links = linkUrls
-    .map((url, i) => ({ label: linkLabels[i] || "Link", url: url.trim() }))
-    .filter((l) => l.url);
   const useAtelierArt = formData.get("coverSource") !== "upload";
   const file = formData.get("photo") as File | null;
-  const upload = await trySaveUpload(file, `p-${user.id}`);
+  const upload = await trySaveUpload(file, `p-${user.id}`, user.id);
   if (upload.error) return { error: upload.error };
   const uploaded = upload.url;
 
@@ -212,7 +217,8 @@ export async function savePerfumeAction(formData: FormData) {
       listingIntent === "marketplace" && catalogRating != null && Number.isFinite(catalogRating) && catalogRating >= 0 && catalogRating <= 5
         ? catalogRating
         : null,
-    links: JSON.stringify(links),
+    // External user-provided URLs are intentionally not stored or rendered.
+    links: "[]",
     imageUrl,
     ownerId: user.id,
   };
@@ -271,6 +277,7 @@ function parseCsv(text: string) {
 
 export async function importPerfumesAction(formData: FormData) {
   const user = await requireUser();
+  if (!(await takeUserLimit("listing-import", user.id, 12, 60 * 60_000))) redirect(`/me/perfumes/import?notice=${encodeURIComponent("You have reached the hourly import limit. Please try again later.")}`);
   const fail = (message: string): never => redirect(`/me/perfumes/import?notice=${encodeURIComponent(message)}`);
   const file = formData.get("file") as File | null;
   if (!file) fail("Upload the Atelier CSV template as a .csv file.");

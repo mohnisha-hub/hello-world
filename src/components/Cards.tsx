@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cardInitials, cardTone } from "@/lib/photos";
 import { formatMoney, formatPricePerMl } from "@/lib/money";
 import { StatusBadge } from "@/components/StatusBadge";
-import { perfumeCompletion, parseLinks } from "@/lib/completion";
+import { perfumeCompletion } from "@/lib/completion";
 import { isBidListing, listingAmountCents } from "@/lib/sale";
 
 export function CollectionCard({
@@ -53,7 +53,6 @@ export function PerfumeCard({
     ml: number | null;
     imageUrl: string | null;
     status: string;
-    links?: string;
     kind?: string | null;
     fill?: string | null;
     shippingIncluded?: boolean | null;
@@ -96,8 +95,4 @@ export function PerfumeCard({
       </div>
     </Link>
   );
-}
-
-export function parseLinksSafe(raw: string) {
-  return parseLinks(raw);
 }

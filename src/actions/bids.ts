@@ -10,6 +10,7 @@ import { isBidListing, listingAmountCents } from "@/lib/sale";
 import { notify } from "@/lib/notifications";
 import { settleExpiredAuctions } from "@/lib/auctions";
 import { withNotice } from "@/lib/notice";
+import { takeUserLimit } from "@/lib/rate-limit";
 
 async function closeOtherBids(perfumeId: string, keepBidId?: string) {
   await prisma.bid.updateMany({
@@ -32,6 +33,7 @@ function revalidateDeal(username: string, perfumeId: string) {
 
 export async function placeBidAction(formData: FormData) {
   const user = await requireUser();
+  if (!(await takeUserLimit("bid", user.id, 30, 60 * 60_000))) return { error: "You have reached the hourly bid limit. Please try again later." };
   const perfumeId = String(formData.get("perfumeId"));
   const amountCents = rupeesToPaise(String(formData.get("amount") ?? ""));
   if (amountCents == null || amountCents <= 0) return { error: "Enter a bid amount in INR." };
@@ -80,12 +82,13 @@ export async function placeBidAction(formData: FormData) {
 
 export async function buyPerfumeAction(formData: FormData) {
   const user = await requireUser();
+  if (!(await takeUserLimit("buy-request", user.id, 20, 60 * 60_000))) return { error: "You have reached the hourly purchase-request limit. Please try again later." };
   const perfumeId = String(formData.get("perfumeId"));
   const perfume = await prisma.perfume.findUnique({
     where: { id: perfumeId },
     include: { owner: true },
   });
-  if (!perfume || perfume.status !== "published") return { error: "This listing is not for sale." };
+  if (!perfume || perfume.status !== "published" || perfume.unitsAvailable < 1) return { error: "This listing is not for sale." };
   if (perfume.listingIntent !== "marketplace") return { error: "This perfume is shared from a collector's shelf, not listed for sale." };
   if (perfume.ownerId === user.id) return { error: "You cannot buy your own perfume." };
   if (isBidListing(perfume.saleType)) return { error: "This perfume is open for bids, not buy-now." };
@@ -186,6 +189,7 @@ export async function archiveBidSoldAction(formData: FormData) {
 
 export async function ratePurchaseAction(formData: FormData) {
   const user = await requireUser();
+  if (!(await takeUserLimit("rating", user.id, 20, 24 * 60 * 60_000))) return { error: "You have reached today’s rating limit. Please try again tomorrow." };
   const perfumeId = String(formData.get("perfumeId"));
   const purchaseScore = Number(formData.get("purchaseScore"));
   const deliveryScore = Number(formData.get("deliveryScore"));
@@ -203,10 +207,11 @@ export async function ratePurchaseAction(formData: FormData) {
     where: {
       perfumeId,
       bidderId: user.id,
-      status: { in: ["archived", "accepted"] },
+      // A rating represents a completed sale, never merely an accepted bid.
+      status: "archived",
     },
   });
-  if (!bid) return { error: "You can rate after a buy or accepted bid." };
+  if (!bid) return { error: "You can rate once the seller marks the deal sold." };
   await prisma.rating.upsert({
     where: { perfumeId_raterId: { perfumeId, raterId: user.id } },
     update: { purchaseScore, deliveryScore },
@@ -231,6 +236,8 @@ export async function sendMessageAction(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   const clientMessageId = String(formData.get("clientMessageId") ?? "");
   if (!body) return { error: "Write a message." };
+  if (body.length > 2_000) return { error: "Messages can be up to 2,000 characters." };
+  if (!(await takeUserLimit("message", user.id, 60, 5 * 60_000))) return { error: "You have sent many messages recently. Please wait a few minutes." };
   const convo = await prisma.conversation.findUnique({
     where: { id: conversationId },
     include: { bid: true },

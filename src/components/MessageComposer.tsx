@@ -38,7 +38,7 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
   }
 
   return <form onSubmit={submit} className="chat-composer">
-    <textarea name="body" rows={1} placeholder="Write a message" aria-label="Message" value={body} onChange={(event) => setBody(event.target.value)} disabled={pending} required />
+    <textarea name="body" rows={1} maxLength={2000} placeholder="Write a message" aria-label="Message" value={body} onChange={(event) => setBody(event.target.value)} disabled={pending} required />
     <span className={`chat-send-status${status?.includes("error") ? " is-error" : ""}`} aria-live="polite">{status}</span>
     <button className="chat-send" type="submit" disabled={pending || !body.trim()} aria-label={pending ? "Sending message" : "Send message"}>{pending ? "…" : "↑"}</button>
   </form>;

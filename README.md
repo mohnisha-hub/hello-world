@@ -11,7 +11,6 @@ You need Node.js 22+ and Postgres (Neon from the Vercel Marketplace, or Docker).
 ```bash
 cp .env.example .env.local
 # AUTH_SECRET: openssl rand -base64 32
-# ADMIN_USERNAME: the handle you will log in as (default mohnisha)
 ```
 
 2. Database — preferred: `npx vercel integration add neon`, then `npx vercel env pull .env.local --yes`.
@@ -48,6 +47,6 @@ Environment:
 - `BLOB_READ_WRITE_TOKEN` — Vercel Blob
 - `AUTH_SECRET` — required, no fallback
 - `AUTH_URL` — production URL
-- `ADMIN_USERNAME` — only this username sees Admin editing as
+- `MALWARE_SCAN_URL` / `MALWARE_SCAN_TOKEN` — required in production for custom image uploads. The scanner endpoint must return `{ "clean": true }` for a clean file.
 
 After the first successful migrate, seed production **once**: pull prod env and `npm run seed` (idempotent; skips if listings already exist).

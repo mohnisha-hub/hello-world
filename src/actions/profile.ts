@@ -11,6 +11,11 @@ import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
+function profileText(value: FormDataEntryValue | null, maxLength: number) {
+  const text = String(value ?? "").trim();
+  return text.length <= maxLength ? text || null : undefined;
+}
+
 export async function completeOnboardingAction(formData: FormData) {
   const sessionUser = await getSessionUser();
   if (!sessionUser?.id) redirect("/login?from=/onboarding");
@@ -24,11 +29,12 @@ export async function completeOnboardingAction(formData: FormData) {
   if (taken) return { error: "That username is already taken." };
 
   const intent = String(formData.get("intent") ?? "draft");
-  const bio = String(formData.get("bio") ?? "").trim() || null;
-  const location = String(formData.get("location") ?? "").trim() || null;
+  const bio = profileText(formData.get("bio"), 1_000);
+  const location = profileText(formData.get("location"), 120);
+  if (bio === undefined || location === undefined) return { error: "Your bio or location is too long." };
   const email = String(formData.get("email") ?? "").trim() || current.email || null;
   const file = formData.get("photo") as File | null;
-  const upload = await trySaveUpload(file, `user-${current.id}`);
+  const upload = await trySaveUpload(file, `user-${current.id}`, current.id);
   if (upload.error) return { error: upload.error };
 
   await prisma.user.update({
@@ -58,7 +64,7 @@ export async function saveProfileAction(formData: FormData) {
   const useSuggested = formData.get("useSuggested") === "on";
   const removePhoto = formData.get("removePhoto") === "on";
   const file = formData.get("photo") as File | null;
-  const upload = await trySaveUpload(file, `user-${user.id}`);
+  const upload = await trySaveUpload(file, `user-${user.id}`, user.id);
   if (upload.error) return { error: upload.error };
   const uploaded = upload.url;
 
@@ -74,8 +80,9 @@ export async function saveProfileAction(formData: FormData) {
   // surfacing them in the collector profile experience.
   const email = current.email;
   const workNumber = current.workNumber;
-  const bio = String(formData.get("bio") ?? "").trim() || null;
-  const location = String(formData.get("location") ?? "").trim() || null;
+  const bio = profileText(formData.get("bio"), 1_000);
+  const location = profileText(formData.get("location"), 120);
+  if (bio === undefined || location === undefined) return { error: "Your bio or location is too long." };
   const feedSort = String(formData.get("feedSort") ?? current.feedSort);
 
   await prisma.user.update({
