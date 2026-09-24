@@ -334,7 +334,6 @@ export function PerfumeForm({
         <select name="kind" required={isMarketplace} value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="">Select a type</option>
           <option value="retail">Retail</option>
-          <option value="tester">Tester</option>
           <option value="partial">Partial</option>
           <option value="decant">Decant</option>
         </select>

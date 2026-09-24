@@ -143,8 +143,8 @@ export async function savePerfumeAction(formData: FormData) {
   }
 
   const kind = String(formData.get("kind") ?? "");
-  if (listingIntent === "marketplace" && !new Set(["retail", "tester", "partial", "decant"]).has(kind)) {
-    return { error: "Choose Retail, Tester, Partial, or Decant." };
+  if (listingIntent === "marketplace" && !new Set(["retail", "partial", "decant"]).has(kind)) {
+    return { error: "Choose Retail, Partial, or Decant." };
   }
   const fill = null;
   const mlRaw = String(formData.get("ml") ?? "").trim();
@@ -301,7 +301,7 @@ export async function importPerfumesAction(formData: FormData) {
     const ml = Number(valueFor(row, "ml"));
     const bidDurationHours = Number(valueFor(row, "bid_duration_hours") || "24");
     const amount = rupeesToPaise(valueFor(row, saleType === "bid" ? "min_bid_inr" : "price_inr"));
-    const invalidMarketplace = !["retail", "tester", "partial", "decant"].includes(kind) || !Number.isFinite(ml) || ml <= 0 || amount == null || amount <= 0 || (saleType === "bid" && (!Number.isInteger(bidDurationHours) || bidDurationHours < 1 || bidDurationHours > 48));
+    const invalidMarketplace = !["retail", "partial", "decant"].includes(kind) || !Number.isFinite(ml) || ml <= 0 || amount == null || amount <= 0 || (saleType === "bid" && (!Number.isInteger(bidDurationHours) || bidDurationHours < 1 || bidDurationHours > 48));
     if (!name || (listingIntent === "marketplace" && invalidMarketplace)) issues.push(`Row ${index + 2}`);
     return { name, listingIntent, saleType, kind: kind || null, ml: Number.isFinite(ml) && ml > 0 ? ml : null, amount, bidDurationHours, row };
   });
