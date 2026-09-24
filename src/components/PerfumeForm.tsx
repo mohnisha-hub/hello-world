@@ -68,6 +68,9 @@ export function PerfumeForm({
   const [shippingIncluded, setShippingIncluded] = useState<boolean | null>(
     perfume ? perfume.shippingIncluded : null,
   );
+  const [shelfSaleKind, setShelfSaleKind] = useState<"" | "retail" | "partial" | "decant">("");
+  const [shelfSaleMl, setShelfSaleMl] = useState("");
+  const [shelfSalePrice, setShelfSalePrice] = useState("");
   const [description, setDescription] = useState(perfume?.description ?? "");
   const [sourcedFrom, setSourcedFrom] = useState(perfume?.sourcedFrom ?? "");
   const [topNotes, setTopNotes] = useState(perfume?.topNotes ?? "");
@@ -84,6 +87,7 @@ export function PerfumeForm({
 
   const suggested = suggestedPerfumeArt(name || "perfume");
   const isMarketplace = listingIntent === "marketplace";
+  const isCreatingMarketplaceCopy = listingIntent === "collection" && shelfSaleKind !== "";
   const previewImage = coverSource === "atelier" ? suggested : perfume?.imageUrl;
   const brandChoices = useMemo(() => popularBrands(), []);
   const brandPerfumes = useMemo(() => perfumesForBrand(brand), [brand]);
@@ -290,6 +294,35 @@ export function PerfumeForm({
           ))}
         </select>
       </label>
+      {listingIntent === "collection" ? <section className="rounded-2xl border border-line bg-paper p-4">
+        <p className="eyebrow">Willing to sell?</p>
+        <h2 className="mt-1 font-serif text-2xl">Share it, or let it go</h2>
+        <p className="mt-1 text-sm text-muted">Your shelf entry stays exactly as it is. If you choose a sale type, publishing creates a separate, standalone marketplace listing that you can manage independently.</p>
+        <label className="field mt-4">
+          Availability
+          <select value={shelfSaleKind} onChange={(event) => setShelfSaleKind(event.target.value as "" | "retail" | "partial" | "decant")}>
+            <option value="">Not selling</option>
+            <option value="retail">Sell as retail</option>
+            <option value="partial">Sell as partial</option>
+            <option value="decant">Willing to decant</option>
+          </select>
+        </label>
+        {isCreatingMarketplaceCopy ? <>
+          <input type="hidden" name="createMarketplaceListing" value="true" />
+          <input type="hidden" name="marketplaceKind" value={shelfSaleKind} />
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="field">
+              {shelfSaleKind === "decant" ? "Decant size (ml)" : "Available volume (ml)"}
+              <input name="marketplaceMl" type="number" min="0.1" step="0.1" required value={shelfSaleMl} onChange={(event) => setShelfSaleMl(event.target.value)} />
+            </label>
+            <label className="field">
+              Price (INR)
+              <input name="marketplacePrice" type="number" min="1" step="0.01" required value={shelfSalePrice} onChange={(event) => setShelfSalePrice(event.target.value)} />
+            </label>
+          </div>
+          <p className="mt-3 text-xs text-muted">This creates one Buy Now listing. You can edit its condition, delivery details, price, and availability later without changing your shelf entry.</p>
+        </> : null}
+      </section> : null}
       <div className="flex items-center gap-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -396,7 +429,7 @@ export function PerfumeForm({
           Save draft
         </button>
         <button className="btn" formAction={(fd) => run("publish", fd)} type="submit">
-          Publish perfume
+          {isCreatingMarketplaceCopy ? "Publish shelf & create listing" : "Publish perfume"}
         </button>
         {perfume && perfume.status === "published" ? (
           <button className="btn btn-ghost" formAction={(fd) => run("unpublish", fd)} type="submit">

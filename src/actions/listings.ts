@@ -115,6 +115,7 @@ export async function savePerfumeAction(formData: FormData) {
   const brand = readText(formData, "brand", 100);
   const name = readText(formData, "name", 160);
   const listingIntent = String(formData.get("listingIntent") ?? "marketplace") === "collection" ? "collection" : "marketplace";
+  const createMarketplaceListing = listingIntent === "collection" && formData.get("createMarketplaceListing") === "true";
   const acceptBids = formData.get("acceptBids") === "on" || formData.get("acceptBids") === "true";
   const saleType = listingIntent === "collection" ? "collection" : acceptBids ? "bid" : "buy";
   const priceCents = rupeesToPaise(String(formData.get("price") ?? ""));
@@ -125,6 +126,15 @@ export async function savePerfumeAction(formData: FormData) {
   if (listingIntent === "marketplace" && saleType === "bid" && (minBidCents == null || minBidCents <= 0)) {
     return { error: "Enter a minimum bid in INR." };
   }
+  const marketplaceKind = String(formData.get("marketplaceKind") ?? "");
+  const marketplaceMl = Number(String(formData.get("marketplaceMl") ?? ""));
+  const marketplacePriceCents = rupeesToPaise(String(formData.get("marketplacePrice") ?? ""));
+  if (createMarketplaceListing && !["retail", "partial", "decant"].includes(marketplaceKind)) {
+    return { error: "Choose Retail, Partial, or Decant for the marketplace listing." };
+  }
+  if (createMarketplaceListing && (!Number.isFinite(marketplaceMl) || marketplaceMl <= 0 || marketplacePriceCents == null || marketplacePriceCents <= 0)) {
+    return { error: "Add a valid price and volume for the marketplace listing." };
+  }
   const durationValue = Number(String(formData.get("bidDuration") ?? ""));
   const durationUnit = String(formData.get("bidDurationUnit") ?? "hours");
   const durationHours = durationUnit === "days" ? durationValue * 24 : durationValue;
@@ -133,6 +143,9 @@ export async function savePerfumeAction(formData: FormData) {
   }
 
   const intent = String(formData.get("intent") ?? "save");
+  if (createMarketplaceListing && intent !== "publish") {
+    return { error: "Publish the shelf perfume to create its marketplace listing." };
+  }
   const collectionIdRaw = String(formData.get("collectionId") ?? "");
   const collectionId = collectionIdRaw || null;
   if (collectionId) {
@@ -239,12 +252,49 @@ export async function savePerfumeAction(formData: FormData) {
     });
   }
 
+  let marketplaceCopyId: string | null = null;
+  if (createMarketplaceListing) {
+    const marketplaceCopy = await prisma.perfume.create({
+      data: {
+        ownerId: user.id,
+        collectionId: null,
+        brand,
+        name,
+        saleType: "buy",
+        listingIntent: "marketplace",
+        priceCents: marketplacePriceCents!,
+        minBidCents: null,
+        bidEndsAt: null,
+        kind: marketplaceKind,
+        fill: null,
+        ml: marketplaceMl,
+        unitsAvailable: 1,
+        shippingIncluded: false,
+        description,
+        sourcedFrom,
+        topNotes,
+        middleNotes,
+        baseNotes,
+        catalogRating:
+          catalogRating != null && Number.isFinite(catalogRating) && catalogRating >= 0 && catalogRating <= 5
+            ? catalogRating
+            : null,
+        links: "[]",
+        imageUrl,
+        status: "published",
+        publishedAt: new Date(),
+      },
+    });
+    marketplaceCopyId = marketplaceCopy.id;
+  }
+
   await syncCollectionStatus(collectionId);
   if (existing?.collectionId && existing.collectionId !== collectionId) {
     await syncCollectionStatus(existing.collectionId);
   }
 
-  revalidateOwner(user.username, [`/p/${perfume.id}`]);
+  revalidateOwner(user.username, [`/p/${perfume.id}`, ...(marketplaceCopyId ? [`/p/${marketplaceCopyId}`] : [])]);
+  if (marketplaceCopyId) redirect(withNotice(`/p/${marketplaceCopyId}`, "Marketplace listing created from your shelf perfume."));
   redirect(`/p/${perfume.id}`);
 }
 
