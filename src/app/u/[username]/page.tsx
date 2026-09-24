@@ -102,6 +102,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
     discoveries: discoveryCount,
     heartsGiven,
     buyerRatings: rating?.count ?? 0,
+    buyerRatingStars: rating ? rating.average / 2 : 0,
   });
 
   return (

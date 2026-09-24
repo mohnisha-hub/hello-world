@@ -16,6 +16,7 @@ export type BadgeProgress = {
   discoveries: number;
   heartsGiven: number;
   buyerRatings: number;
+  buyerRatingStars: number;
 };
 
 export function atelierBadges(progress: BadgeProgress): AtelierBadge[] {
@@ -34,6 +35,8 @@ export function atelierBadges(progress: BadgeProgress): AtelierBadge[] {
     { id: "discoverer", name: "Discoverer", description: "Your first offer or purchase request.", earned: progress.discoveries >= 1, progress: `${Math.min(progress.discoveries, 1)}/1 discovery`, href: "/explore" },
     { id: "acquirer", name: "Acquirer", description: "Ten offers or purchase requests made.", earned: progress.discoveries >= 10, progress: `${Math.min(progress.discoveries, 10)}/10 discoveries`, href: "/explore" },
     { id: "appreciator", name: "Appreciator", description: "You gave your first heart to another collector’s scent pick.", earned: progress.heartsGiven >= 1, progress: `${Math.min(progress.heartsGiven, 1)}/1 heart given`, href: "/explore" },
-    { id: "trusted", name: "Trusted", description: "Five buyers have rated their experience.", earned: progress.buyerRatings >= 5, progress: `${Math.min(progress.buyerRatings, 5)}/5 buyer ratings`, href: "/me/perfumes/new" },
+    { id: "rated", name: "Rated", description: "A buyer has rated their completed deal with you.", earned: progress.buyerRatings >= 1, progress: `${Math.min(progress.buyerRatings, 1)}/1 buyer rating`, href: "/me/bids?tab=archives" },
+    { id: "fan-favourite", name: "Fan favourite", description: "Buyers rate you above four stars on average.", earned: progress.buyerRatings >= 1 && progress.buyerRatingStars > 4, progress: `${Math.min(progress.buyerRatingStars, 5).toFixed(1)}/5 buyer average`, href: "/me/bids?tab=archives" },
+    { id: "insider", name: "Insider", description: "Twenty buyer ratings with a four-star-plus average.", earned: progress.buyerRatings >= 20 && progress.buyerRatingStars > 4, progress: `${Math.min(progress.buyerRatings, 20)}/20 ratings · ${Math.min(progress.buyerRatingStars, 5).toFixed(1)}/5`, href: "/me/bids?tab=archives" },
   ];
 }

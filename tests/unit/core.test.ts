@@ -87,12 +87,26 @@ describe("fragrance catalog", () => {
 
 describe("Atelier badges", () => {
   it("awards shelf and marketplace milestones at their intended thresholds", () => {
-    const badges = atelierBadges({ shelf: 20, brands: 10, showcasePicks: 5, wishlist: 20, marketplace: 11, discoveries: 10, heartsGiven: 1, buyerRatings: 5 });
+    const badges = atelierBadges({ shelf: 20, brands: 10, showcasePicks: 5, wishlist: 20, marketplace: 11, discoveries: 10, heartsGiven: 1, buyerRatings: 20, buyerRatingStars: 4.5 });
     expect(badges.filter((badge) => badge.earned)).toHaveLength(badges.length);
   });
 
   it("keeps the next milestone actionable", () => {
-    const badges = atelierBadges({ shelf: 1, brands: 1, showcasePicks: 0, wishlist: 0, marketplace: 0, discoveries: 0, heartsGiven: 0, buyerRatings: 0 });
+    const badges = atelierBadges({ shelf: 1, brands: 1, showcasePicks: 0, wishlist: 0, marketplace: 0, discoveries: 0, heartsGiven: 0, buyerRatings: 0, buyerRatingStars: 0 });
     expect(badges.find((badge) => !badge.earned)).toMatchObject({ name: "Curator", progress: "1/5 on shelf" });
+  });
+
+  it("awards seller-trust badges only at their stated rating thresholds", () => {
+    const base = { shelf: 0, brands: 0, showcasePicks: 0, wishlist: 0, marketplace: 0, discoveries: 0, heartsGiven: 0 };
+    const oneRating = atelierBadges({ ...base, buyerRatings: 1, buyerRatingStars: 4 });
+    expect(oneRating.find((badge) => badge.id === "rated")?.earned).toBe(true);
+    expect(oneRating.find((badge) => badge.id === "fan-favourite")?.earned).toBe(false);
+
+    const fanFavourite = atelierBadges({ ...base, buyerRatings: 5, buyerRatingStars: 4.1 });
+    expect(fanFavourite.find((badge) => badge.id === "fan-favourite")?.earned).toBe(true);
+    expect(fanFavourite.find((badge) => badge.id === "insider")?.earned).toBe(false);
+
+    const insider = atelierBadges({ ...base, buyerRatings: 20, buyerRatingStars: 4.1 });
+    expect(insider.find((badge) => badge.id === "insider")?.earned).toBe(true);
   });
 });
