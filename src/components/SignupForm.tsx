@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { googleLoginAction, signupAction } from "@/actions/auth";
+import { ATELIER_AVATARS } from "@/lib/avatars";
 
 const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*[0-9]).{8,}$/;
 
 export function SignupForm({ from, setupError, googleEnabled }: { from: string; setupError?: string | null; googleEnabled: boolean }) {
   const [error, setError] = useState<string | null>(setupError ?? null);
   const [password, setPassword] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string>(ATELIER_AVATARS[0]);
   const passwordValid = PASSWORD_RE.test(password);
   return (
     <form
@@ -27,6 +30,29 @@ export function SignupForm({ from, setupError, googleEnabled }: { from: string; 
       <p className="text-muted">Use Google for the fastest start, then choose your permanent collector username.</p>
       {error ? <p className="text-accent">{error}</p> : null}
       <input type="hidden" name="from" value={from} />
+      <input type="hidden" name="avatarUrl" value={avatarUrl} />
+      <fieldset className="avatar-picker">
+        <legend>Choose your Atelier portrait</legend>
+        <p className="text-sm text-muted">You can change it later from your profile.</p>
+        <div className="avatar-picker-options">
+          {ATELIER_AVATARS.map((avatar, index) => {
+            const selected = avatar === avatarUrl;
+            return (
+              <button
+                key={avatar}
+                type="button"
+                className={`avatar-choice ${selected ? "is-selected" : ""}`}
+                onClick={() => setAvatarUrl(avatar)}
+                aria-pressed={selected}
+                aria-label={`Choose Atelier portrait ${index + 1}`}
+              >
+                <Image src={avatar} alt="" width={104} height={104} sizes="52px" />
+                {selected ? <span className="avatar-choice-check" aria-hidden="true">✓</span> : null}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
       <label className="field">
         Username
         <input name="username" required minLength={3} maxLength={24} autoComplete="username" />

@@ -1,5 +1,7 @@
+import { avatarForSeed } from "@/lib/avatars";
+
 export function suggestedAvatar(seed: string) {
-  return `https://api.dicebear.com/9.x/lorelei/svg?seed=${encodeURIComponent(seed || "atelier")}`;
+  return avatarForSeed(seed);
 }
 
 export function suggestedCollectionArt(name: string) {

@@ -15,6 +15,7 @@ import { ScentHeartButton } from "@/components/ScentHeartButton";
 import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { FRAGRANCE_CATALOG } from "@/lib/fragrance-catalog";
 import { atelierBadges } from "@/lib/badges";
+import { suggestedAvatar } from "@/lib/photos";
 
 export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ username: string }>; searchParams: Promise<{ view?: string; shelfPage?: string; availablePage?: string; bidsPage?: string }> }) {
   const { username } = await params;
@@ -113,7 +114,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
           <div className="profile-identity">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={user.photoUrl || `https://api.dicebear.com/9.x/lorelei/svg?seed=${user.username}`}
+          src={user.photoUrl || suggestedAvatar(user.username)}
           alt=""
           className="h-20 w-20 rounded-full border-4 border-paper object-cover sm:h-24 sm:w-24"
         />

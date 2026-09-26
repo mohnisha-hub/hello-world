@@ -6,6 +6,7 @@ import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { suggestedAvatar } from "@/lib/photos";
+import { isAtelierAvatar } from "@/lib/avatars";
 import { DATABASE_UNAVAILABLE, isDatabaseConfigured } from "@/lib/db";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { takeRequestLimit } from "@/lib/rate-limit";
@@ -52,6 +53,7 @@ export async function googleLoginAction(formData: FormData) {
 export async function signupAction(formData: FormData) {
   const username = normalizedUsername(formData.get("username"));
   const password = String(formData.get("password") ?? "");
+  const selectedAvatar = String(formData.get("avatarUrl") ?? "");
   const safeFrom = safePath(String(formData.get("from") ?? "/me/profile"));
   if (!USERNAME_RE.test(username)) return { error: "Username must be 3–24 letters, numbers, or underscores." };
   if (!PASSWORD_RE.test(password)) return { error: "Password must be 8+ characters and include a letter and a number." };
@@ -64,7 +66,7 @@ export async function signupAction(formData: FormData) {
       data: {
         username,
         passwordHash: await hash(password, 10),
-        photoUrl: suggestedAvatar(username),
+        photoUrl: isAtelierAvatar(selectedAvatar) ? selectedAvatar : suggestedAvatar(username),
         profileStatus: "draft",
       },
     });
