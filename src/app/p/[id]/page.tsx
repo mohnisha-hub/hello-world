@@ -153,13 +153,13 @@ export default async function PerfumePage({
         </ul>
         {perfume.description ? <p>{perfume.description}</p> : null}
         {isOwner ? <p className="text-sm text-muted">Completion {completion.percent}%</p> : null}
-        {!shelfPerfume && !session?.user && perfume.status === "published" && !isOwner ? (
-          <GuestAuthCta from={`/p/${id}`} action={bidListing ? "wishlist or bid" : "wishlist or buy"} />
+        {!session?.user && perfume.status === "published" && !isOwner ? (
+          <GuestAuthCta from={`/p/${id}`} action={shelfPerfume ? "wishlist" : bidListing ? "wishlist or bid" : "wishlist or buy"} />
         ) : null}
-        {session?.user && !isOwner && perfume.status === "published" && !shelfPerfume ? (
+        {session?.user && !isOwner && perfume.status === "published" ? (
           <div className="space-y-3">
             <WishlistButton targetType="perfume" targetId={id} saved={Boolean(wish)} label="Wishlist perfume" />
-            {bidListing && !bidEnded ? (
+            {!shelfPerfume && bidListing && !bidEnded ? (
               <form action={bidForm} className="flex flex-wrap gap-2">
                 <input type="hidden" name="perfumeId" value={id} />
                 <input
@@ -174,14 +174,14 @@ export default async function PerfumePage({
                   Place bid
                 </button>
               </form>
-            ) : bidListing ? <p className="text-sm text-muted">Bidding has ended. The winning bid is being confirmed.</p> : (
+            ) : !shelfPerfume && bidListing ? <p className="text-sm text-muted">Bidding has ended. The winning bid is being confirmed.</p> : !shelfPerfume ? (
               <form action={buyForm}>
                 <input type="hidden" name="perfumeId" value={id} />
                 <button className="btn" type="submit">
                   Buy for {formatMoney(amount)}
                 </button>
               </form>
-            )}
+            ) : null}
           </div>
         ) : null}
         {isOwner && bidListing ? (
