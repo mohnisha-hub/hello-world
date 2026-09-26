@@ -67,7 +67,6 @@ export default async function PerfumePage({
     id: { not: perfume.id },
     status: "published",
     listingIntent: "marketplace",
-    ownerId: { not: perfume.ownerId },
     unitsAvailable: { gt: 0 },
     owner: { profileStatus: "published" },
   } as const;
@@ -77,7 +76,7 @@ export default async function PerfumePage({
     orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
     take: 100,
   });
-  const sellerListings = marketplaceCandidates.filter((item) => samePerfume(item, perfume)).slice(0, 4);
+  const sellerListings = marketplaceCandidates.filter((item) => samePerfume(item, perfume) && item.ownerId !== perfume.ownerId).slice(0, 4);
   const perfumeNotes = noteSet(perfume);
   const similarListings = perfumeNotes.size === 0
     ? []
@@ -246,7 +245,7 @@ export default async function PerfumePage({
       <div className="perfume-discovery-grid">{sellerListings.map((item) => <SellerTile key={item.id} perfume={item} />)}</div>
     </section> : null}
     {similarListings.length ? <section className="perfume-discovery-section">
-      <div className="perfume-discovery-heading"><div><p className="eyebrow">DISCOVER NEARBY SCENTS</p><h2>Similar perfumes from sellers</h2><p>Available listings with notes in common.</p></div><Link href="/explore#marketplace">Browse marketplace →</Link></div>
+      <div className="perfume-discovery-heading"><div><p className="eyebrow">DISCOVER NEARBY SCENTS</p><h2>Similar perfumes</h2><p>Available listings with notes in common.</p></div><Link href="/explore#marketplace">Browse marketplace →</Link></div>
       <div className="perfume-discovery-grid">{similarListings.map(({ item, sharedNotes }) => <SellerTile key={item.id} perfume={item} sharedNotes={sharedNotes} />)}</div>
     </section> : null}
     </>
@@ -259,11 +258,20 @@ function SellerTile({ perfume, sharedNotes = [] }: { perfume: SellerTilePerfume;
   const amount = listingAmountCents(perfume);
   const ratings = perfume.owner.ratingsReceived;
   const rating = ratings.length ? ratings.reduce((sum, row) => sum + (row.purchaseScore + row.deliveryScore) / 2, 0) / ratings.length : null;
+  const kind = listingKindLabel(perfume.kind);
   return <Link href={`/p/${perfume.id}`} className="perfume-seller-tile">
     {perfume.imageUrl ? <img src={perfume.imageUrl} alt="" /> : <span className="perfume-seller-initials">{(perfume.brand || perfume.name).slice(0, 1)}</span>}
-    <span className="perfume-seller-copy"><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{perfume.owner.username}{perfume.owner.location ? ` · ${perfume.owner.location}` : ""}</em>{sharedNotes.length ? <i>Shared: {sharedNotes.slice(0, 3).join(" · ")}</i> : null}</span>
+    <span className="perfume-seller-copy"><small>{perfume.brand || "Perfume"}</small><strong>{perfume.name}</strong><em>@{perfume.owner.username}{perfume.owner.location ? ` · ${perfume.owner.location}` : ""}</em><span className="perfume-seller-listing-meta"><b>{kind}</b>{perfume.ml ? <b>{perfume.ml} ml</b> : <b>Volume not set</b>}{isBidListing(perfume.saleType) ? <b>Accepting bids</b> : <b>Buy now</b>}</span>{sharedNotes.length ? <i>Shared: {sharedNotes.slice(0, 3).join(" · ")}</i> : null}</span>
     <span className="perfume-seller-price">{isBidListing(perfume.saleType) ? `From ${formatMoney(amount)}` : formatMoney(amount)}<small>{rating ? `${rating.toFixed(1)} ★` : "New seller"}</small></span>
   </Link>;
+}
+
+function listingKindLabel(kind: string | null) {
+  if (kind === "bottle") return "Retail";
+  if (kind === "retail") return "Retail";
+  if (kind === "partial") return "Partial";
+  if (kind === "decant") return "Decant";
+  return "Type not set";
 }
 
 function normal(value: string | null | undefined) { return (value || "").trim().toLowerCase().replace(/[^a-z0-9]/g, ""); }
