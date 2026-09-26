@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/listings";
 import { getSessionUser } from "@/lib/acting";
 import { trySaveUpload } from "@/lib/upload";
 import { suggestedAvatar } from "@/lib/photos";
+import { isAtelierAvatar } from "@/lib/avatars";
 import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
@@ -61,20 +62,13 @@ export async function saveProfileAction(formData: FormData) {
   const user = await requireUser();
   const intent = String(formData.get("intent") ?? "save");
   const publish = intent === "publish";
-  const useSuggested = formData.get("useSuggested") === "on";
-  const removePhoto = formData.get("removePhoto") === "on";
-  const file = formData.get("photo") as File | null;
-  const upload = await trySaveUpload(file, `user-${user.id}`, user.id);
-  if (upload.error) return { error: upload.error };
-  const uploaded = upload.url;
+  const selectedAvatar = String(formData.get("avatarUrl") ?? "");
 
   const current = await prisma.user.findUnique({ where: { id: user.id } });
   if (!current) return { error: "Account missing." };
 
   let photoUrl = current.photoUrl;
-  if (removePhoto) photoUrl = null;
-  if (useSuggested) photoUrl = suggestedAvatar(user.username);
-  if (uploaded) photoUrl = uploaded;
+  if (isAtelierAvatar(selectedAvatar)) photoUrl = selectedAvatar;
 
   // Contact takes place in deal chat. Retain legacy private fields without
   // surfacing them in the collector profile experience.
