@@ -32,7 +32,7 @@ export function SignupForm({ from, setupError, googleEnabled }: { from: string; 
       <input type="hidden" name="from" value={from} />
       <input type="hidden" name="avatarUrl" value={avatarUrl} />
       <fieldset className="avatar-picker">
-        <legend>Choose your Atelier portrait</legend>
+        <legend>Choose your Atelier avatar</legend>
         <p className="text-sm text-muted">You can change it later from your profile.</p>
         <div className="avatar-picker-options">
           {ATELIER_AVATARS.map((avatar, index) => {
@@ -44,7 +44,7 @@ export function SignupForm({ from, setupError, googleEnabled }: { from: string; 
                 className={`avatar-choice ${selected ? "is-selected" : ""}`}
                 onClick={() => setAvatarUrl(avatar)}
                 aria-pressed={selected}
-                aria-label={`Choose Atelier portrait ${index + 1}`}
+                aria-label={`Choose Atelier avatar ${index + 1}`}
               >
                 <Image src={avatar} alt="" width={104} height={104} sizes="52px" />
                 {selected ? <span className="avatar-choice-check" aria-hidden="true">✓</span> : null}
