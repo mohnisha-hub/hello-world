@@ -9,6 +9,7 @@ import { trySaveUpload } from "@/lib/upload";
 import { suggestedAvatar } from "@/lib/photos";
 import { isAtelierAvatar } from "@/lib/avatars";
 import { parseScentShowcase, SCENT_PROFILE_SLOTS } from "@/lib/showcase";
+import { recordUsage } from "@/lib/metrics";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
@@ -50,6 +51,7 @@ export async function completeOnboardingAction(formData: FormData) {
       usernameConfigured: true,
     },
   });
+  if (intent === "publish" && current.profileStatus !== "published") recordUsage("profile_published", { onboarding: true });
   revalidatePath("/");
   revalidatePath("/me");
   revalidatePath("/me/profile");
@@ -91,6 +93,7 @@ export async function saveProfileAction(formData: FormData) {
       profileStatus: publish ? "published" : "draft",
     },
   });
+  if (publish && current.profileStatus !== "published") recordUsage("profile_published", { onboarding: false });
   revalidatePath("/me");
   revalidatePath("/me/profile");
   revalidatePath("/");

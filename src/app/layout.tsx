@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 import { Nav } from "@/components/Nav";
 import { FlyingCow } from "@/components/FlyingCow";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const themeScript = `(function(){try{var s=localStorage.getItem("atelier-theme");var t=s==="light"||s==="dark"?s:(window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");document.documentElement.setAttribute("data-theme",t);}catch(e){document.documentElement.setAttribute("data-theme","dark");}})();`;
@@ -33,6 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Nav />
         <FlyingCow />
         <div className="mx-auto max-w-5xl px-4 pb-16 pt-8">{children}</div>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

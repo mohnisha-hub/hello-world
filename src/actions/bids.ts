@@ -11,6 +11,7 @@ import { notify } from "@/lib/notifications";
 import { settleExpiredAuctions } from "@/lib/auctions";
 import { withNotice } from "@/lib/notice";
 import { takeUserLimit } from "@/lib/rate-limit";
+import { recordUsage } from "@/lib/metrics";
 
 async function closeOtherBids(perfumeId: string, keepBidId?: string) {
   await prisma.bid.updateMany({
@@ -76,6 +77,7 @@ export async function placeBidAction(formData: FormData) {
     return convo;
   });
   await notify(perfume.ownerId, "bid", `New bid on ${perfume.name}: ${formatMoney(amountCents)}.`, `/p/${perfume.id}`);
+  recordUsage("bid_placed");
   revalidateDeal((await prisma.user.findUnique({ where: { id: perfume.ownerId }, select: { username: true } }))?.username ?? "", perfumeId);
   redirect(withNotice(`/me/messages/${conversation.id}`, `Bid sent for ${perfume.name}.`));
 }
@@ -115,6 +117,7 @@ export async function buyPerfumeAction(formData: FormData) {
     return convo;
   });
   await notify(perfume.ownerId, "buy", `New purchase request for ${perfume.name}. Confirm it in the deal chat when fulfilled.`, `/me/messages/${conversation.id}`);
+  recordUsage("buy_requested");
   revalidateDeal(perfume.owner.username, perfumeId);
   redirect(withNotice(`/me/messages/${conversation.id}`, `Purchase request sent for ${perfume.name}.`));
 }
@@ -263,6 +266,7 @@ export async function sendMessageAction(formData: FormData) {
   }
   const recipientId = convo.bid.bidderId === user.id ? convo.bid.sellerId : convo.bid.bidderId;
   await notify(recipientId, "message", "New message about a perfume deal.", `/me/messages/${conversationId}`);
+  recordUsage("message_sent");
   revalidatePath(`/me/messages/${conversationId}`);
   return { ok: true };
 }

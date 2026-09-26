@@ -10,6 +10,7 @@ import { isAtelierAvatar } from "@/lib/avatars";
 import { DATABASE_UNAVAILABLE, isDatabaseConfigured } from "@/lib/db";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { takeRequestLimit } from "@/lib/rate-limit";
+import { recordUsage } from "@/lib/metrics";
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*[0-9]).{8,}$/;
@@ -70,6 +71,7 @@ export async function signupAction(formData: FormData) {
         profileStatus: "draft",
       },
     });
+    recordUsage("account_created", { method: "password" });
     const result = await signIn("credentials", { username, password, redirect: false });
     if (!result || result.error) return { error: "Account created, but sign-in failed. Try logging in." };
   } catch (error) {

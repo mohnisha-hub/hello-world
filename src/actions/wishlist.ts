@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/listings";
+import { recordUsage } from "@/lib/metrics";
 
 export async function toggleWishlistAction(formData: FormData) {
   const user = await requireUser();
@@ -34,6 +35,7 @@ export async function toggleWishlistAction(formData: FormData) {
     await prisma.wishlistItem.delete({ where: { id: existing.id } });
   } else {
     await prisma.wishlistItem.create({ data: { userId: user.id, targetType, targetId } });
+    recordUsage("wishlist_added", { target_type: targetType });
   }
   revalidatePath("/me/wishlist");
   revalidatePath(`/p/${targetId}`);

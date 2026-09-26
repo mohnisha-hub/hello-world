@@ -11,6 +11,7 @@ import { isBidListing } from "@/lib/sale";
 import { fragranceByCatalogKey, notesToText } from "@/lib/fragrance-catalog";
 import { withNotice } from "@/lib/notice";
 import { takeUserLimit } from "@/lib/rate-limit";
+import { recordUsage } from "@/lib/metrics";
 
 function readText(formData: FormData, key: string, maxLength: number) {
   const value = String(formData.get(key) ?? "").trim();
@@ -93,6 +94,7 @@ export async function saveCollectionAction(formData: FormData) {
       where: { id: collection.id },
       data: { status: "published", publishedAt: collection.publishedAt ?? new Date() },
     });
+    if (existing?.status !== "published") recordUsage("collection_published");
   } else if (intent === "unpublish") {
     const destination = await moveToUncategorizedCollection(user.id, collection.id);
     await prisma.collection.update({
@@ -245,6 +247,7 @@ export async function savePerfumeAction(formData: FormData) {
       where: { id: perfume.id },
       data: { status: "published", publishedAt: perfume.publishedAt ?? new Date() },
     });
+    if (existing?.status !== "published") recordUsage("perfume_published", { listing_intent: listingIntent, sale_type: saleType });
   } else if (intent === "unpublish") {
     await prisma.perfume.update({
       where: { id: perfume.id },
@@ -305,6 +308,7 @@ export async function addCatalogPerfumeToShelfAction(formData: FormData) {
   const existing = await prisma.perfume.findFirst({ where: { ownerId: user.id, brand: entry.brand, name: entry.name, listingIntent: "collection", status: { not: "deleted" } }, select: { id: true } });
   if (!existing) {
     await prisma.perfume.create({ data: { ownerId: user.id, brand: entry.brand, name: entry.name, saleType: "collection", listingIntent: "collection", priceCents: 0, imageUrl: entry.imageUrl ?? suggestedPerfumeArt(entry.name), topNotes: notesToText(entry.top), middleNotes: notesToText(entry.middle), baseNotes: notesToText(entry.base), links: "[]", status: "published", publishedAt: new Date() } });
+    recordUsage("shelf_added", { source: "perfume_explorer" });
   }
   revalidateOwner(user.username);
   revalidatePath("/explore");
@@ -373,6 +377,7 @@ export async function importPerfumesAction(formData: FormData) {
     const shipping = ["true", "yes", "1"].includes(valueFor(item.row, "shipping_included").toLowerCase());
     await prisma.perfume.create({ data: { ownerId: user.id, collectionId, brand: valueFor(item.row, "brand") || null, name: item.name, listingIntent: item.listingIntent, saleType: item.saleType, priceCents: item.listingIntent === "marketplace" ? item.amount! : 0, minBidCents: item.saleType === "bid" ? item.amount : null, bidEndsAt: item.saleType === "bid" ? new Date(Date.now() + item.bidDurationHours * 60 * 60 * 1000) : null, kind: item.kind, ml: item.ml, shippingIncluded: item.listingIntent === "marketplace" ? shipping : false, description: valueFor(item.row, "description") || null, topNotes: valueFor(item.row, "top_notes") || null, middleNotes: valueFor(item.row, "middle_notes") || null, baseNotes: valueFor(item.row, "base_notes") || null, links: "[]", imageUrl: suggestedPerfumeArt(item.name) } });
   }
+  recordUsage("bulk_imported", { count: parsed.length });
   revalidateOwner(user.username);
   redirect(`/me/perfumes?notice=${encodeURIComponent(`${parsed.length} perfume${parsed.length === 1 ? "" : "s"} imported as drafts.`)}`);
 }
