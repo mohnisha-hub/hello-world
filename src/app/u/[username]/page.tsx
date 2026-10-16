@@ -16,6 +16,7 @@ import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { FRAGRANCE_CATALOG } from "@/lib/fragrance-catalog";
 import { atelierBadges } from "@/lib/badges";
 import { suggestedAvatar } from "@/lib/photos";
+import { PodiumInstagramShare } from "@/components/PodiumInstagramShare";
 
 export default async function PublicProfilePage({ params, searchParams }: { params: Promise<{ username: string }>; searchParams: Promise<{ view?: string; shelfPage?: string; availablePage?: string; bidsPage?: string }> }) {
   const { username } = await params;
@@ -150,6 +151,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
       ) : null}
       <div className="profile-layout">
         <main className="profile-content">
+          {isOwner ? <PodiumInstagramShare username={user.username} shelfCount={shelfPerfumes.length} podiumCount={topThree.length} /> : null}
           {topThree.length ? <TopThree perfumes={topThree} username={user.username} profileId={user.id} heartCounts={heartCounts} heartedSlots={heartedSlots} canHeart={Boolean(session?.user?.id && !isOwner)} /> : null}
 
           <ProfileSection title={isOwner ? "My shelf" : `@${user.username}'s shelf`} detail="Collection perfumes" tools={<div className="flex flex-wrap items-center gap-2"><ProfileListingControls username={user.username} view={listingView} page={shelfPaging.page} pageKey="shelfPage" />{isOwner ? <SectionTools addHref="/me/perfumes/new" editHref="/me/perfumes" addLabel="Add perfume" editLabel="Edit perfumes" /> : null}</div>}>
@@ -229,7 +231,7 @@ export default async function PublicProfilePage({ params, searchParams }: { para
 
         <aside className="profile-rail">
           {shelfNotes ? <ShelfNoteProfile profile={shelfNotes} /> : null}
-          <section className="scent-profile-panel">
+          <section className="scent-profile-panel" id="scent-profile">
               <div className="mb-3"><p className="eyebrow">SCENT PROFILE</p><h2 className="mt-1 font-serif text-xl">{isOwner ? "My scent profile" : `@${user.username}'s scent profile`}</h2></div>
               {!isOwner && topThree.length ? <div className="scent-podium-preview"><p>Podium</p>{topThree.map((perfume, index) => <Link key={perfume.id} href={`/p/${perfume.id}`}><span>0{index + 1}</span><strong>{perfume.brand ? `${perfume.brand} · ` : ""}{perfume.name}</strong><b>↗</b></Link>)}</div> : null}
               {scentRoles.length ? <div className="scent-role-list">{scentRoles.map(({ key, label, perfume }) => <ScentRoleCard key={key} slot={key} label={label} perfume={perfume} username={user.username} profileId={user.id} heartCount={heartCounts[key] ?? 0} hearted={heartedSlots.has(key)} canHeart={Boolean(session?.user?.id && !isOwner)} />)}</div> : null}
