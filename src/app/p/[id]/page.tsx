@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -30,11 +31,10 @@ export default async function PerfumePage({
 }) {
   const { id } = await params;
   const { notice } = await searchParams;
-  const session = await auth();
-  const perfume = await prisma.perfume.findUnique({
-    where: { id },
-    include: { owner: true, collection: true },
-  });
+  const [session, perfume] = await Promise.all([
+    auth(),
+    prisma.perfume.findUnique({ where: { id }, include: { owner: true, collection: true } }),
+  ]);
   if (!perfume) notFound();
   const isOwner = session?.user?.id === perfume.ownerId;
   if (!isOwner) {
@@ -44,48 +44,26 @@ export default async function PerfumePage({
   const amount = listingAmountCents(perfume);
   const bidListing = isBidListing(perfume.saleType);
   const shelfPerfume = perfume.listingIntent === "collection";
-  const wish = session?.user?.id
-    ? await prisma.wishlistItem.findUnique({
+  const [wish, bids] = await Promise.all([
+    session?.user?.id
+      ? prisma.wishlistItem.findUnique({
         where: {
           userId_targetType_targetId: { userId: session.user.id, targetType: "perfume", targetId: id },
         },
       })
-    : null;
-
-  const bids = bidListing
-    ? await prisma.bid.findMany({
+      : Promise.resolve(null),
+    bidListing
+      ? prisma.bid.findMany({
         where: { perfumeId: id, kind: "bid" },
         include: { bidder: true, conversation: true },
         orderBy: { amountCents: "desc" },
       })
-    : [];
+      : Promise.resolve([]),
+  ]);
   const openBids = bids.filter((b) => b.status === "open");
   const highest = openBids[0] ?? null;
   const acceptedBid = bids.find((b) => b.status === "accepted") ?? null;
   const bidEnded = Boolean(perfume.bidEndsAt && perfume.bidEndsAt <= new Date());
-  const marketplaceWhere = {
-    id: { not: perfume.id },
-    status: "published",
-    listingIntent: "marketplace",
-    unitsAvailable: { gt: 0 },
-    owner: { profileStatus: "published" },
-  } as const;
-  const marketplaceCandidates = await prisma.perfume.findMany({
-    where: marketplaceWhere,
-    include: { owner: { select: { username: true, location: true, ratingsReceived: { select: { purchaseScore: true, deliveryScore: true } } } } },
-    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-    take: 100,
-  });
-  const sellerListings = marketplaceCandidates.filter((item) => samePerfume(item, perfume) && item.ownerId !== perfume.ownerId).slice(0, 4);
-  const perfumeNotes = noteSet(perfume);
-  const similarListings = perfumeNotes.size === 0
-    ? []
-    : marketplaceCandidates
-        .map((item) => ({ item, sharedNotes: sharedNotes(perfumeNotes, noteSet(item)) }))
-        .filter(({ item, sharedNotes }) => sharedNotes.length > 0 && !samePerfume(item, perfume))
-        .sort((a, b) => b.sharedNotes.length - a.sharedNotes.length)
-        .slice(0, 4);
-
   return (
     <>
     <article className="grid gap-8 md:grid-cols-2">
@@ -240,6 +218,34 @@ export default async function PerfumePage({
         ) : null}
       </div>
     </article>
+    <Suspense fallback={null}><ListingRecommendations perfume={{ id: perfume.id, ownerId: perfume.ownerId, brand: perfume.brand, name: perfume.name, topNotes: perfume.topNotes, middleNotes: perfume.middleNotes, baseNotes: perfume.baseNotes }} /></Suspense>
+    </>
+  );
+}
+
+type SellerTilePerfume = {
+  id: string; ownerId: string; brand: string | null; name: string; saleType: string; priceCents: number; minBidCents: number | null; ml: number | null; kind: string | null; imageUrl: string | null; topNotes: string | null; middleNotes: string | null; baseNotes: string | null;
+  owner: { username: string; location: string | null; ratingsReceived: { purchaseScore: number; deliveryScore: number }[] };
+};
+
+type RecommendationTarget = Pick<SellerTilePerfume, "id" | "ownerId" | "brand" | "name" | "topNotes" | "middleNotes" | "baseNotes">;
+
+async function ListingRecommendations({ perfume }: { perfume: RecommendationTarget }) {
+  const marketplaceCandidates = await prisma.perfume.findMany({
+    where: { id: { not: perfume.id }, status: "published", listingIntent: "marketplace", unitsAvailable: { gt: 0 }, owner: { profileStatus: "published" } },
+    select: { id: true, ownerId: true, brand: true, name: true, saleType: true, priceCents: true, minBidCents: true, ml: true, kind: true, imageUrl: true, topNotes: true, middleNotes: true, baseNotes: true, owner: { select: { username: true, location: true, ratingsReceived: { select: { purchaseScore: true, deliveryScore: true } } } } },
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    take: 100,
+  });
+  const sellerListings = marketplaceCandidates.filter((item) => samePerfume(item, perfume) && item.ownerId !== perfume.ownerId).slice(0, 4);
+  const perfumeNotes = noteSet(perfume);
+  const similarListings = perfumeNotes.size === 0 ? [] : marketplaceCandidates
+    .map((item) => ({ item, sharedNotes: sharedNotes(perfumeNotes, noteSet(item)) }))
+    .filter(({ item, sharedNotes }) => sharedNotes.length > 0 && !samePerfume(item, perfume))
+    .sort((a, b) => b.sharedNotes.length - a.sharedNotes.length)
+    .slice(0, 4);
+
+  return <>
     {sellerListings.length ? <section className="perfume-discovery-section">
       <div className="perfume-discovery-heading"><div><p className="eyebrow">MARKETPLACE</p><h2>Perfume from sellers</h2><p>Other active listings for this scent.</p></div><Link href={`/explore?q=${encodeURIComponent([perfume.brand, perfume.name].filter(Boolean).join(" "))}#marketplace`}>View all →</Link></div>
       <div className="perfume-discovery-grid">{sellerListings.map((item) => <SellerTile key={item.id} perfume={item} />)}</div>
@@ -248,11 +254,8 @@ export default async function PerfumePage({
       <div className="perfume-discovery-heading"><div><p className="eyebrow">DISCOVER NEARBY SCENTS</p><h2>Similar perfumes</h2><p>Available listings with notes in common.</p></div><Link href="/explore#marketplace">Browse marketplace →</Link></div>
       <div className="perfume-discovery-grid">{similarListings.map(({ item, sharedNotes }) => <SellerTile key={item.id} perfume={item} sharedNotes={sharedNotes} />)}</div>
     </section> : null}
-    </>
-  );
+  </>;
 }
-
-type SellerTilePerfume = Awaited<ReturnType<typeof prisma.perfume.findMany>>[number] & { owner: { username: string; location: string | null; ratingsReceived: { purchaseScore: number; deliveryScore: number }[] } };
 
 function SellerTile({ perfume, sharedNotes = [] }: { perfume: SellerTilePerfume; sharedNotes?: string[] }) {
   const amount = listingAmountCents(perfume);

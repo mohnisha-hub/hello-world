@@ -1,14 +1,21 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { SearchFilter } from "@/components/SearchFilter";
-import { sellerRating } from "@/lib/listings";
 import { auth } from "@/auth";
-import { PerfumeFinder } from "@/components/PerfumeFinder";
+import { DeferredPerfumeFinder } from "@/components/DeferredPerfumeFinder";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { getPublicActivity } from "@/lib/public-activity";
 
+const publicOwner = { select: { id: true, username: true, photoUrl: true, location: true, bio: true, profileStatus: true } } as const;
+
+async function ExploreActivity() {
+  const activities = await getPublicActivity(6);
+  return <ActivityFeed activities={activities} mode="explore" />;
+}
+
 export default async function ExplorePage() {
-  const [perfumes, collections, allUsers, session, activities] = await Promise.all([
+  const [perfumes, collections, allUsers, session] = await Promise.all([
     prisma.perfume.findMany({
       where: {
         status: "published",
@@ -16,12 +23,12 @@ export default async function ExplorePage() {
         owner: { profileStatus: "published" },
         OR: [{ collectionId: null }, { collection: { status: { in: ["published", "sold"] } } }],
       },
-      include: { owner: true },
+      select: { id: true, brand: true, name: true, saleType: true, minBidCents: true, priceCents: true, ml: true, kind: true, fill: true, imageUrl: true, description: true, topNotes: true, middleNotes: true, baseNotes: true, status: true, owner: publicOwner },
       orderBy: { publishedAt: "desc" },
     }),
     prisma.collection.findMany({
       where: { status: "published", owner: { profileStatus: "published" } },
-      include: { owner: true, perfumes: { where: { status: "published" } } },
+      select: { id: true, name: true, photoUrl: true, status: true, owner: publicOwner, _count: { select: { perfumes: { where: { status: "published" } } } } },
       orderBy: { publishedAt: "desc" },
     }),
     prisma.user.findMany({
@@ -31,11 +38,10 @@ export default async function ExplorePage() {
       take: 100,
     }),
     auth(),
-    getPublicActivity(6),
   ]);
   const marketplaceUsers = Array.from(new Map(perfumes.map((p) => [p.owner.id, p.owner])).values());
-  const ratingRows = await Promise.all(marketplaceUsers.map(async (user) => [user.id, await sellerRating(user.id)] as const));
-  const ratingMap = Object.fromEntries(ratingRows);
+  const ratings = marketplaceUsers.length ? await prisma.rating.groupBy({ by: ["sellerId"], where: { sellerId: { in: marketplaceUsers.map((user) => user.id) } }, _avg: { purchaseScore: true, deliveryScore: true }, _count: { _all: true } }) : [];
+  const ratingMap = Object.fromEntries(ratings.map((rating) => [rating.sellerId, { average: ((rating._avg.purchaseScore ?? 0) + (rating._avg.deliveryScore ?? 0)) / 2, count: rating._count._all }]));
 
   return (
     <div className="explore-page">
@@ -60,13 +66,13 @@ export default async function ExplorePage() {
             <p>Browse live bottles, decants, and active bids from collectors. Filter by house, note, type, size, price, or location.</p>
           </div>
         </div>
-        <SearchFilter perfumes={perfumes} collections={collections.map((c) => ({ ...c, perfumeCount: c.perfumes.length }))} allUsers={allUsers} ratingMap={ratingMap} />
+        <SearchFilter perfumes={perfumes} collections={collections.map(({ _count, ...collection }) => ({ ...collection, perfumeCount: _count.perfumes }))} allUsers={allUsers} ratingMap={ratingMap} />
       </section>
       <section id="activity" className="explore-zone explore-priority-section explore-activity-section">
         <div className="explore-zone-heading"><div><p className="eyebrow">THE COMMUNITY</p><h2>Activity</h2><p>See the latest shelves, favourites, wishlists, and listings from people in Atelier.</p></div></div>
-        <ActivityFeed activities={activities} mode="explore" />
+        <Suspense fallback={<div className="activity-explorer-feed activity-explorer-loading" aria-hidden="true" />}><ExploreActivity /></Suspense>
       </section>
-      <div id="perfume-explorer"><PerfumeFinder signedIn={Boolean(session?.user?.id)} liveListings={perfumes.map((perfume) => ({ brand: perfume.brand, name: perfume.name }))} /></div>
+      <DeferredPerfumeFinder signedIn={Boolean(session?.user?.id)} liveListings={perfumes.map((perfume) => ({ brand: perfume.brand, name: perfume.name }))} />
     </div>
   );
 }

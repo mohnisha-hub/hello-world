@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatMoney, formatPricePerMl } from "@/lib/money";
@@ -19,6 +19,9 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
   const searchParams = useSearchParams();
   const requestedQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(requestedQuery);
+  // Keep keystrokes responsive while the fuzzy perfume and collector matching
+  // catches up on larger catalogues.
+  const deferredQuery = useDeferredValue(query);
   const [condition, setCondition] = useState<Condition>("all");
   const [listing, setListing] = useState<"all" | "buy" | "bid">("all");
   const [brand, setBrand] = useState("all");
@@ -30,14 +33,14 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
   const [page, setPage] = useState(1);
   useEffect(() => { setQuery(requestedQuery); }, [requestedQuery]);
   const matchedUsers = useMemo(() => {
-    const term = query.trim().toLowerCase().replace(/^@/, "");
+    const term = deferredQuery.trim().toLowerCase().replace(/^@/, "");
     if (!term) return [];
     return allUsers.filter((user) => user.username.toLowerCase().includes(term)).slice(0, 6);
-  }, [allUsers, query]);
+  }, [allUsers, deferredQuery]);
   const brands = useMemo(() => Array.from(new Set(perfumes.map((p) => p.brand).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
   const locations = useMemo(() => Array.from(new Set(perfumes.map((p) => p.owner.location).filter((value): value is string => Boolean(value)))).sort(), [perfumes]);
   const matchedPerfumes = useMemo(() => {
-    const source = query.trim() ? searchPerfumesAndGroupUsers(perfumes, query, ratingMap).flatMap(({ matchingPerfumes }) => matchingPerfumes) : perfumes;
+    const source = deferredQuery.trim() ? searchPerfumesAndGroupUsers(perfumes, deferredQuery, ratingMap).flatMap(({ matchingPerfumes }) => matchingPerfumes) : perfumes;
     const unique = Array.from(new Map(source.map((p) => [p.id, p])).values());
     const inPriceBand = (amount: number) => price === "all" || (price === "under-3000" && amount < 300000) || (price === "3000-10000" && amount >= 300000 && amount < 1000000) || (price === "10000-25000" && amount >= 1000000 && amount < 2500000) || (price === "25000-plus" && amount >= 2500000);
     const inSizeBand = (ml: number | null) => size === "all" || (ml != null && ((size === "under-10" && ml < 10) || (size === "10-30" && ml >= 10 && ml <= 30) || (size === "30-75" && ml > 30 && ml <= 75) || (size === "75-plus" && ml > 75)));
@@ -54,8 +57,8 @@ export function SearchFilter({ perfumes, collections = [], allUsers, ratingMap }
       if (sort === "per-ml-high") return bPerMl - aPerMl;
       return 0;
     });
-  }, [brand, condition, listing, location, perfumes, price, query, ratingMap, size, sort]);
-  useEffect(() => { setPage(1); }, [brand, condition, listing, location, price, query, size, sort]);
+  }, [brand, condition, deferredQuery, listing, location, perfumes, price, ratingMap, size, sort]);
+  useEffect(() => { setPage(1); }, [brand, condition, deferredQuery, listing, location, price, size, sort]);
   const pageCount = Math.max(1, Math.ceil(matchedPerfumes.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const visiblePerfumes = matchedPerfumes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);

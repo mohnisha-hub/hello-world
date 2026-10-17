@@ -17,7 +17,11 @@ export function NotificationBell() {
       window.dispatchEvent(new CustomEvent("atelier:notifications", { detail: { unreadMessages: data.unreadMessages } }));
     }
   };
-  useEffect(() => { load(); const timer = window.setInterval(load, 15000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => {
+    const deferredLoad = window.setTimeout(load, 700);
+    const timer = window.setInterval(load, 15000);
+    return () => { window.clearTimeout(deferredLoad); window.clearInterval(timer); };
+  }, []);
   useEffect(() => {
     const closeOnOutsidePointer = (event: PointerEvent) => { if (bellRef.current && !bellRef.current.contains(event.target as Node)) setOpen(false); };
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
